@@ -27,6 +27,11 @@ def _MOV
   @instruction_index += 1
 end
 
+def _MUL(input, output, value)
+  @program += ["m".ord, input, output] + to_u16(value)
+  @instruction_index += 1
+end
+
 def _ANG(angle)
   @program += ["a".ord] + to_u16(angle)
   @instruction_index += 1
@@ -34,6 +39,11 @@ end
 
 def _INC_ANG(angle)
   @program += ["A".ord] + to_u16(angle)
+  @instruction_index += 1
+end
+
+def _SET_ANGLE_REG(register)
+  @program += ["x".ord, register]
   @instruction_index += 1
 end
 
@@ -45,6 +55,11 @@ end
 
 def _STO_REG(register, value)
   @program += ["S".ord, register] + to_u16(value)
+  @instruction_index += 1
+end
+
+def _STO_REG_REG(r1, r2)
+  @program += ["2".ord, r1, r2]
   @instruction_index += 1
 end
 

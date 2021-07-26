@@ -22,10 +22,20 @@ pub enum Instruction {
     SetAngle(u16),
     /// Increment the angle
     IncAngle(u16),
+    /// Increment the angle by the value of a given register
+    SetAngleReg(Register),
+    /// Multiply the value in Register(input) by `value` and store in Register(output)
+    Mul {
+        input: Register,
+        output: Register,
+        value: u16,
+    },
     /// Loop to back to the address a number of times
     Loop { addr: u16, times: u16 },
     /// Set register
     StoreRegister(Register, u16),
+    /// Set register1 to the value of register2
+    StoreRegReg(Register, Register),
     /// Decrement register
     DecrementRegister(Register),
     /// Increment register
@@ -71,6 +81,13 @@ impl Instruction {
             0x64 => Instruction::DecrementRegister(register()),
             0x4a => Instruction::JumpIfNonZeroRegister(register(), be_u16()),
             0x48 => Instruction::Halt,
+            0x6d => Instruction::Mul {
+                input: register(),
+                output: register(),
+                value: be_u16(),
+            },
+            0x78 => Instruction::SetAngleReg(register()),
+            0x32 => Instruction::StoreRegReg(register(), register()),
             invalid => panic!("invalid instruction: {}", invalid),
         };
 
@@ -151,6 +168,10 @@ impl<'a> Vm<'a> {
                 self.registers[register as usize] = value;
                 self.pc += 1;
             }
+            Instruction::StoreRegReg(r1, r2) => {
+                self.registers[r1 as usize] = self.registers[r2 as usize];
+                self.pc += 1;
+            }
             Instruction::IncrementRegister(register) => {
                 self.registers[register as usize] += 1;
                 self.pc += 1;
@@ -167,6 +188,20 @@ impl<'a> Vm<'a> {
                 }
 
                 return None;
+            }
+            Instruction::SetAngleReg(register) => {
+                let angle = self.registers[register as usize];
+                self.angle = angle % 360;
+                self.pc += 1;
+            }
+            Instruction::Mul {
+                input,
+                output,
+                value,
+            } => {
+                let v1 = self.registers[input as usize];
+                self.registers[output as usize] = v1 * value;
+                self.pc += 1;
             }
         }
 
