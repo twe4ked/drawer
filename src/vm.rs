@@ -8,6 +8,10 @@ pub enum Register {
     B = 1,
     C = 2,
     D = 3,
+    E = 4,
+    F = 5,
+    G = 6,
+    H = 7,
 }
 
 #[derive(Debug, PartialEq)]
@@ -61,6 +65,10 @@ impl Instruction {
                 1 => Register::B,
                 2 => Register::C,
                 3 => Register::D,
+                4 => Register::E,
+                5 => Register::F,
+                6 => Register::G,
+                7 => Register::H,
                 _ => panic!("invalid register: {}", buffer[*i.borrow()]),
             };
             *i.borrow_mut() += 1;
@@ -104,7 +112,7 @@ pub struct Vm<'a> {
     loops: HashMap<usize, u16>,
     program: &'a [Instruction],
     terminated: bool,
-    registers: [u16; 4],
+    registers: [u16; 8],
 }
 
 impl<'a> Vm<'a> {
@@ -118,7 +126,7 @@ impl<'a> Vm<'a> {
             loops: HashMap::new(),
             program,
             terminated: false,
-            registers: [0, 0, 0, 0],
+            registers: Default::default(),
         }
     }
 

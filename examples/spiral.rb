@@ -2,7 +2,7 @@ require_relative "util"
 
 _DRW
 
-_STO_REG A, 100
+_STO_REG E, 100
 _STO_REG D, 1
 
 # Start a loop
@@ -24,8 +24,8 @@ mark_1 = _MARK
 
   # Increment our loop
   _INC_REG D
-  _DEC_REG A
+  _DEC_REG E
 
-_JMP_NZ A, mark_1
+_JMP_NZ E, mark_1
 
 _END
