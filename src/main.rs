@@ -4,7 +4,7 @@ mod buffer;
 mod vm;
 
 use buffer::Buffer;
-use vm::{Instruction, Register, Vm};
+use vm::{Instruction, Vm};
 
 const WIDTH: usize = 1024;
 const HEIGHT: usize = 1024;
@@ -24,60 +24,10 @@ fn decode(buffer: &[u8]) -> Vec<Instruction> {
             break;
         }
 
-        let be_u16 = |i| u16::from_be_bytes([buffer[i + 2], buffer[i + 1]]);
-        let register = |i| match buffer[i + 1] {
-            0 => Register::A,
-            1 => Register::B,
-            2 => Register::C,
-            3 => Register::D,
-            _ => panic!("invalid register: {}", buffer[i + 1]),
-        };
+        let (bytes, instruction) = Instruction::parse_next(&buffer[i..]);
+        i += bytes;
 
-        match buffer[i] {
-            0x44 => program.push(Instruction::Draw),
-            0x4d => program.push(Instruction::Move),
-            0x4c => {
-                let addr = be_u16(i);
-                i += 2;
-                let times = be_u16(i);
-                i += 2;
-                program.push(Instruction::Loop { addr, times });
-            }
-            0x61 => {
-                program.push(Instruction::SetAngle(be_u16(i)));
-                i += 2;
-            }
-            0x41 => {
-                program.push(Instruction::IncAngle(be_u16(i)));
-                i += 2;
-            }
-            0x53 => {
-                let reg = register(i);
-                i += 1;
-                let addr = be_u16(i);
-                i += 2;
-                program.push(Instruction::StoreRegister(reg, addr));
-            }
-            0x49 => {
-                program.push(Instruction::IncrementRegister(register(i)));
-                i += 1;
-            }
-            0x64 => {
-                program.push(Instruction::DecrementRegister(register(i)));
-                i += 1;
-            }
-            0x4a => {
-                let reg = register(i);
-                i += 1;
-                let addr = be_u16(i);
-                i += 2;
-                program.push(Instruction::JumpIfNonZeroRegister(reg, addr));
-            }
-            0x48 => program.push(Instruction::Halt),
-            invalid => panic!("invalid instruction: {}", invalid),
-        }
-
-        i += 1;
+        program.push(instruction);
     }
     program
 }
