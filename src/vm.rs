@@ -37,19 +37,19 @@ pub enum Instruction {
     /// Move in direction of the current angle stored in register A
     Move,
     /// Multiply the value in R1 by `value` and store in R2
-    Mul(Register, Register, u16),
+    MultiplyImmediate(Register, Register, u16),
     /// Set register
-    StoreRegister(Register, u16),
+    StoreImmediate(Register, u16),
     /// Increment the register by an amount
-    IncrementRegisterBy(Register, u16),
+    AddImmediate(Register, u16),
     /// Set register1 to the value of register2
-    StoreRegReg(Register, Register),
+    Store(Register, Register),
     /// Decrement register
-    DecrementRegister(Register),
+    Decrement(Register),
     /// Increment register
-    IncrementRegister(Register),
+    Increment(Register),
     /// Jump if register is non-zero
-    JumpIfNonZeroRegister(Register, u16),
+    JumpIfNonZero(Register, u16),
 }
 
 struct Program<'a> {
@@ -88,18 +88,18 @@ impl Instruction {
             0x02 => Instruction::Move,
             0x03 => {
                 if high_bit_set {
-                    Instruction::StoreRegReg(p.register(), p.register())
+                    Instruction::Store(p.register(), p.register())
                 } else {
-                    Instruction::StoreRegister(p.register(), p.read_u16())
+                    Instruction::StoreImmediate(p.register(), p.read_u16())
                 }
             }
-            0x04 => Instruction::IncrementRegister(p.register()),
-            0x05 => Instruction::IncrementRegisterBy(p.register(), p.read_u16()),
-            0x06 => Instruction::DecrementRegister(p.register()),
-            0x07 => Instruction::JumpIfNonZeroRegister(p.register(), p.read_u16()),
+            0x04 => Instruction::Increment(p.register()),
+            0x05 => Instruction::AddImmediate(p.register(), p.read_u16()),
+            0x06 => Instruction::Decrement(p.register()),
+            0x07 => Instruction::JumpIfNonZero(p.register(), p.read_u16()),
             0x08 => Instruction::Halt,
-            0x09 => Instruction::Mul(p.register(), p.register(), p.read_u16()),
-            invalid => panic!("invalid instruction: {}", invalid),
+            0x09 => Instruction::MultiplyImmediate(p.register(), p.register(), p.read_u16()),
+            invalid => panic!("invalid instruction: {:#04x}", invalid),
         };
 
         (p.cursor, instruction)
@@ -150,28 +150,28 @@ impl<'a> Vm<'a> {
                 }
             }
             Instruction::Halt => self.terminated = true,
-            Instruction::StoreRegister(register, value) => {
+            Instruction::StoreImmediate(register, value) => {
                 self.registers[register as usize] = value;
             }
-            Instruction::IncrementRegisterBy(register, value) => {
+            Instruction::AddImmediate(register, value) => {
                 self.registers[register as usize] += value;
             }
-            Instruction::StoreRegReg(r1, r2) => {
+            Instruction::Store(r1, r2) => {
                 self.registers[r1 as usize] = self.registers[r2 as usize];
             }
-            Instruction::IncrementRegister(register) => {
+            Instruction::Increment(register) => {
                 self.registers[register as usize] += 1;
             }
-            Instruction::DecrementRegister(register) => {
+            Instruction::Decrement(register) => {
                 self.registers[register as usize] -= 1;
             }
-            Instruction::JumpIfNonZeroRegister(register, addr) => {
+            Instruction::JumpIfNonZero(register, addr) => {
                 if self.registers[register as usize] != 0 {
                     self.pc = addr as usize;
                     return None;
                 }
             }
-            Instruction::Mul(r1, r2, value) => {
+            Instruction::MultiplyImmediate(r1, r2, value) => {
                 self.registers[r2 as usize] = self.registers[r1 as usize] * value;
             }
         }
