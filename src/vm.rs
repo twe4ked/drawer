@@ -94,11 +94,23 @@ impl Instruction {
                 }
             }
             0x04 => Instruction::Increment(p.register()),
-            0x05 => Instruction::AddImmediate(p.register(), p.read_u16()),
+            0x05 => {
+                if high_bit_set {
+                    todo!("ADD Rx Ry")
+                } else {
+                    Instruction::AddImmediate(p.register(), p.read_u16())
+                }
+            }
             0x06 => Instruction::Decrement(p.register()),
             0x07 => Instruction::JumpIfNonZero(p.register(), p.read_u16()),
             0x08 => Instruction::Halt,
-            0x09 => Instruction::MultiplyImmediate(p.register(), p.register(), p.read_u16()),
+            0x09 => {
+                if high_bit_set {
+                    todo!("MUL Rx Ry Rz")
+                } else {
+                    Instruction::MultiplyImmediate(p.register(), p.register(), p.read_u16())
+                }
+            }
             invalid => panic!("invalid instruction: {:#04x}", invalid),
         };
 
