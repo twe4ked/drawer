@@ -1,19 +1,23 @@
 require_relative "util"
 
-program = []
+_DRW
 
-program += draw_instruction
+    _MOV
+  _LOOP -1, 100
 
-x = 0
-while x < 512 do
-  if x < 508
-    program += move_instruction(x)
-    program += angle_instruction((x * 91) % 360)
-  end
+  _INC_ANG 91
+_LOOP -7, 50
 
-  x += 1
-end
+# This is a worse version of the commented out version below
 
-program += halt_instruction
+# x = 0
+# while x < 512 do
+#   if x < 508
+#     program += move_instruction(x)
+#     program += angle_instruction((x * 91) % 360)
+#   end
+#
+#   x += 1
+# end
 
-write_program(program)
+_END
