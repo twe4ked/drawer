@@ -106,10 +106,11 @@ impl<'a> Vm<'a> {
     }
 
     pub fn step(&mut self) -> Option<(isize, isize, u32)> {
+        let mut pixel = None;
+
         match self.program[self.pc] {
             Instruction::Draw => {
                 self.draw = !self.draw;
-                self.pc += 1;
             }
             Instruction::Move => {
                 let angle = (self.registers[Register::A as usize] % 360) as f64;
@@ -120,49 +121,39 @@ impl<'a> Vm<'a> {
                 self.x += radians.cos();
                 self.y += radians.sin();
 
-                self.pc += 1;
+                if self.draw {
+                    pixel = Some((self.x as isize, self.y as isize, 0xffffff));
+                }
             }
             Instruction::Halt => self.terminated = true,
             Instruction::StoreRegister(register, value) => {
                 self.registers[register as usize] = value;
-                self.pc += 1;
             }
             Instruction::IncrementRegisterBy(register, value) => {
                 self.registers[register as usize] += value;
-                self.pc += 1;
             }
             Instruction::StoreRegReg(r1, r2) => {
                 self.registers[r1 as usize] = self.registers[r2 as usize];
-                self.pc += 1;
             }
             Instruction::IncrementRegister(register) => {
                 self.registers[register as usize] += 1;
-                self.pc += 1;
             }
             Instruction::DecrementRegister(register) => {
                 self.registers[register as usize] -= 1;
-                self.pc += 1;
             }
             Instruction::JumpIfNonZeroRegister(register, addr) => {
-                if self.registers[register as usize] == 0 {
-                    self.pc += 1;
-                } else {
+                if self.registers[register as usize] != 0 {
                     self.pc = addr as usize;
+                    return None;
                 }
-
-                return None;
             }
             Instruction::Mul(r1, r2, value) => {
                 self.registers[r2 as usize] = self.registers[r1 as usize] * value;
-                self.pc += 1;
             }
         }
 
-        if self.draw {
-            Some((self.x as isize, self.y as isize, 0xffffff))
-        } else {
-            None
-        }
+        self.pc += 1;
+        pixel
     }
 
     pub fn is_terminated(&self) -> bool {
