@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::f64::consts::PI;
 
@@ -35,40 +36,45 @@ pub enum Instruction {
 
 impl Instruction {
     pub fn parse_next(buffer: &[u8]) -> (usize, Instruction) {
-        let be_u16 = |i: usize| u16::from_be_bytes([buffer[i + 2], buffer[i + 1]]);
-        let register = |i: usize| match buffer[i + 1] {
-            0 => Register::A,
-            1 => Register::B,
-            2 => Register::C,
-            3 => Register::D,
-            _ => panic!("invalid register: {}", buffer[i + 1]),
+        // We always read at least one byte
+        let i = RefCell::new(1);
+
+        let be_u16 = || {
+            let x = u16::from_be_bytes([buffer[*i.borrow() + 1], buffer[*i.borrow()]]);
+            *i.borrow_mut() += 2;
+            x
         };
 
-        match buffer[0] {
-            0x44 => (1, Instruction::Draw),
-            0x4d => (1, Instruction::Move),
-            0x4c => {
-                let addr = be_u16(0);
-                let times = be_u16(2);
-                (5, Instruction::Loop { addr, times })
-            }
-            0x61 => (3, Instruction::SetAngle(be_u16(0))),
-            0x41 => (3, Instruction::IncAngle(be_u16(0))),
-            0x53 => {
-                let reg = register(0);
-                let addr = be_u16(1);
-                (4, Instruction::StoreRegister(reg, addr))
-            }
-            0x49 => (2, Instruction::IncrementRegister(register(0))),
-            0x64 => (2, Instruction::DecrementRegister(register(0))),
-            0x4a => {
-                let reg = register(0);
-                let addr = be_u16(1);
-                (4, Instruction::JumpIfNonZeroRegister(reg, addr))
-            }
-            0x48 => (1, Instruction::Halt),
+        let register = || {
+            let x = match buffer[*i.borrow()] {
+                0 => Register::A,
+                1 => Register::B,
+                2 => Register::C,
+                3 => Register::D,
+                _ => panic!("invalid register: {}", buffer[*i.borrow()]),
+            };
+            *i.borrow_mut() += 1;
+            x
+        };
+
+        let instruction = match buffer[0] {
+            0x44 => Instruction::Draw,
+            0x4d => Instruction::Move,
+            0x4c => Instruction::Loop {
+                addr: be_u16(),
+                times: be_u16(),
+            },
+            0x61 => Instruction::SetAngle(be_u16()),
+            0x41 => Instruction::IncAngle(be_u16()),
+            0x53 => Instruction::StoreRegister(register(), be_u16()),
+            0x49 => Instruction::IncrementRegister(register()),
+            0x64 => Instruction::DecrementRegister(register()),
+            0x4a => Instruction::JumpIfNonZeroRegister(register(), be_u16()),
+            0x48 => Instruction::Halt,
             invalid => panic!("invalid instruction: {}", invalid),
-        }
+        };
+
+        (i.into_inner(), instruction)
     }
 }
 
