@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::f64::consts::PI;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -28,8 +27,6 @@ pub enum Instruction {
         output: Register,
         value: u16,
     },
-    /// Loop to back to the address a number of times
-    Loop { addr: u16, times: u16 },
     /// Set register
     StoreRegister(Register, u16),
     /// Increment the register by an amount
@@ -74,10 +71,6 @@ impl Instruction {
         let instruction = match buffer[0] {
             0x44 => Instruction::Draw,
             0x4d => Instruction::Move,
-            0x4c => Instruction::Loop {
-                addr: be_u16(),
-                times: be_u16(),
-            },
             0x53 => Instruction::StoreRegister(register(), be_u16()),
             0x49 => Instruction::IncrementRegister(register()),
             0x69 => Instruction::IncrementRegisterBy(register(), be_u16()),
@@ -102,7 +95,6 @@ pub struct Vm<'a> {
     draw: bool,
     x: f64,
     y: f64,
-    loops: HashMap<usize, u16>,
     program: &'a [Instruction],
     terminated: bool,
     registers: [u16; 8],
@@ -115,7 +107,6 @@ impl<'a> Vm<'a> {
             draw: false,
             x: 0.0,
             y: 0.0,
-            loops: HashMap::new(),
             program,
             terminated: false,
             registers: Default::default(),
@@ -140,24 +131,6 @@ impl<'a> Vm<'a> {
                 self.pc += 1;
             }
             Instruction::Halt => self.terminated = true,
-            Instruction::Loop { addr, times } => {
-                // We've already run the loop once to get to the loop instruction
-                let times = times - 1;
-
-                let count = self.loops.entry(self.pc).or_insert(times);
-
-                if *count == 0 {
-                    // If we've reached the end of the loop, reset the loop counter and move on
-                    self.loops.remove(&self.pc);
-                    self.pc += 1;
-                } else {
-                    // Otherwise, decrement the loop counter and jump
-                    *count -= 1;
-                    self.pc = addr as usize;
-                }
-
-                return None;
-            }
             Instruction::StoreRegister(register, value) => {
                 self.registers[register as usize] = value;
                 self.pc += 1;

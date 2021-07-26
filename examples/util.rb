@@ -41,12 +41,6 @@ def _INC_REG_BY(register, amount)
   @instruction_index += 1
 end
 
-def _LOOP(relative_addr, times)
-  addr = @program.length - 1 + relative_addr
-  @program += ["L".ord] + to_u16(addr) + to_u16(times)
-  @instruction_index += 1
-end
-
 def _STO_REG(register, value)
   @program += ["S".ord, register] + to_u16(value)
   @instruction_index += 1
