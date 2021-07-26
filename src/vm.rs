@@ -79,17 +79,19 @@ impl Instruction {
     pub fn parse_next(buffer: &[u8]) -> (usize, Instruction) {
         let mut p = Program { buffer, cursor: 0 };
 
-        let instruction = match p.read_u8() {
-            0x44 => Instruction::Draw,
-            0x4d => Instruction::Move,
-            0x53 => Instruction::StoreRegister(p.register(), p.read_u16()),
-            0x49 => Instruction::IncrementRegister(p.register()),
-            0x69 => Instruction::IncrementRegisterBy(p.register(), p.read_u16()),
-            0x64 => Instruction::DecrementRegister(p.register()),
-            0x4a => Instruction::JumpIfNonZeroRegister(p.register(), p.read_u16()),
-            0x48 => Instruction::Halt,
-            0x6d => Instruction::Mul(p.register(), p.register(), p.read_u16()),
-            0x32 => Instruction::StoreRegReg(p.register(), p.register()),
+        let opcode = p.read_u8();
+
+        let instruction = match opcode {
+            0x01 => Instruction::Draw,
+            0x02 => Instruction::Move,
+            0x03 => Instruction::StoreRegister(p.register(), p.read_u16()),
+            0x04 => Instruction::IncrementRegister(p.register()),
+            0x05 => Instruction::IncrementRegisterBy(p.register(), p.read_u16()),
+            0x06 => Instruction::DecrementRegister(p.register()),
+            0x07 => Instruction::JumpIfNonZeroRegister(p.register(), p.read_u16()),
+            0x08 => Instruction::Halt,
+            0x09 => Instruction::Mul(p.register(), p.register(), p.read_u16()),
+            0x0a => Instruction::StoreRegReg(p.register(), p.register()),
             invalid => panic!("invalid instruction: {}", invalid),
         };
 

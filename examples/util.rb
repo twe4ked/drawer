@@ -5,14 +5,11 @@ def to_u16(x)
   ]
 end
 
-A = 0
-B = 1
-C = 2
-D = 3
-E = 4
-F = 5
-G = 6
-H = 7
+REGISTERS = { A: 0, B: 1, C: 2, D: 3, E: 4, F: 5, G: 6, H: 7 }
+
+def reg(input)
+  REGISTERS.fetch(input)
+end
 
 @program ||= []
 @instruction_index = 0
@@ -22,52 +19,52 @@ def _MARK
 end
 
 def _DRW
-  @program += ["D".ord]
+  @program += [0x01]
   @instruction_index += 1
 end
 
 def _MOV
-  @program += ["M".ord]
-  @instruction_index += 1
-end
-
-def _MUL(input, output, value)
-  @program += ["m".ord, input, output] + to_u16(value)
-  @instruction_index += 1
-end
-
-def _INC_REG_BY(register, amount)
-  @program += ["i".ord, register] + to_u16(amount)
+  @program += [0x02]
   @instruction_index += 1
 end
 
 def _STO_REG(register, value)
-  @program += ["S".ord, register] + to_u16(value)
-  @instruction_index += 1
-end
-
-def _STO_REG_REG(r1, r2)
-  @program += ["2".ord, r1, r2]
-  @instruction_index += 1
-end
-
-def _DEC_REG(register)
-  @program += ["d".ord, register]
+  @program += [0x03, reg(register)] + to_u16(value)
   @instruction_index += 1
 end
 
 def _INC_REG(register)
-  @program += ["I".ord, register]
+  @program += [0x04, reg(register)]
+  @instruction_index += 1
+end
+
+def _INC_REG_BY(register, amount)
+  @program += [0x05, reg(register)] + to_u16(amount)
+  @instruction_index += 1
+end
+
+def _DEC_REG(register)
+  @program += [0x06, reg(register)]
   @instruction_index += 1
 end
 
 def _JMP_NZ(register, addr)
-  @program += ["J".ord, register] + to_u16(addr)
+  @program += [0x07, reg(register)] + to_u16(addr)
+  @instruction_index += 1
+end
+
+def _MUL(input, output, value)
+  @program += [0x09, reg(input), reg(output)] + to_u16(value)
+  @instruction_index += 1
+end
+
+def _STO_REG_REG(r1, r2)
+  @program += [0x0a, reg(r1), reg(r2)]
   @instruction_index += 1
 end
 
 def _END
-  @program += ["H".ord]
+  @program += [0x08]
   File.open("program.bin", "wb") do |f|
     f.write(@program.pack("C*"))
   end

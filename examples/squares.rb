@@ -2,19 +2,19 @@ require_relative "util"
 
 _DRW
 
-_STO_REG B, 50
+_STO_REG :B, 50
   mark_1 = _MARK
 
-  _STO_REG C, 200
+  _STO_REG :C, 200
     mark_2 = _MARK
     _MOV
-    _DEC_REG C
-    _JMP_NZ C, mark_2
+    _DEC_REG :C
+    _JMP_NZ :C, mark_2
 
-  _INC_REG_BY A, 91
+  _INC_REG_BY :A, 91
 
-_DEC_REG B
-_JMP_NZ B, mark_1
+_DEC_REG :B
+_JMP_NZ :B, mark_1
 
 # This is a worse version of the commented out version below
 
