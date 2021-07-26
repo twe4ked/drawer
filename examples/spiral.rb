@@ -20,7 +20,7 @@ mark_1 = _MARK
   # Multiply the current value
   _MUL D, B, 15
   # And then increment the ..
-  _SET_ANGLE_REG B
+  _STO_REG_REG A, B
 
   # Increment our loop
   _INC_REG D

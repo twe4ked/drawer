@@ -36,18 +36,8 @@ def _MUL(input, output, value)
   @instruction_index += 1
 end
 
-def _ANG(angle)
-  @program += ["a".ord] + to_u16(angle)
-  @instruction_index += 1
-end
-
-def _INC_ANG(angle)
-  @program += ["A".ord] + to_u16(angle)
-  @instruction_index += 1
-end
-
-def _SET_ANGLE_REG(register)
-  @program += ["x".ord, register]
+def _INC_REG_BY(register, amount)
+  @program += ["i".ord, register] + to_u16(amount)
   @instruction_index += 1
 end
 

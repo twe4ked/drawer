@@ -20,14 +20,8 @@ pub enum Instruction {
     Draw,
     /// End the program
     Halt,
-    /// Move in direction of the current angle
+    /// Move in direction of the current angle stored in register A
     Move,
-    /// Set the angle
-    SetAngle(u16),
-    /// Increment the angle
-    IncAngle(u16),
-    /// Increment the angle by the value of a given register
-    SetAngleReg(Register),
     /// Multiply the value in Register(input) by `value` and store in Register(output)
     Mul {
         input: Register,
@@ -38,6 +32,8 @@ pub enum Instruction {
     Loop { addr: u16, times: u16 },
     /// Set register
     StoreRegister(Register, u16),
+    /// Increment the register by an amount
+    IncrementRegisterBy(Register, u16),
     /// Set register1 to the value of register2
     StoreRegReg(Register, Register),
     /// Decrement register
@@ -82,10 +78,9 @@ impl Instruction {
                 addr: be_u16(),
                 times: be_u16(),
             },
-            0x61 => Instruction::SetAngle(be_u16()),
-            0x41 => Instruction::IncAngle(be_u16()),
             0x53 => Instruction::StoreRegister(register(), be_u16()),
             0x49 => Instruction::IncrementRegister(register()),
+            0x69 => Instruction::IncrementRegisterBy(register(), be_u16()),
             0x64 => Instruction::DecrementRegister(register()),
             0x4a => Instruction::JumpIfNonZeroRegister(register(), be_u16()),
             0x48 => Instruction::Halt,
@@ -94,7 +89,6 @@ impl Instruction {
                 output: register(),
                 value: be_u16(),
             },
-            0x78 => Instruction::SetAngleReg(register()),
             0x32 => Instruction::StoreRegReg(register(), register()),
             invalid => panic!("invalid instruction: {}", invalid),
         };
@@ -105,7 +99,6 @@ impl Instruction {
 
 pub struct Vm<'a> {
     pc: usize,
-    angle: u16,
     draw: bool,
     x: f64,
     y: f64,
@@ -119,7 +112,6 @@ impl<'a> Vm<'a> {
     pub fn new(program: &'a [Instruction]) -> Self {
         Vm {
             pc: 0,
-            angle: 0,
             draw: false,
             x: 0.0,
             y: 0.0,
@@ -137,8 +129,10 @@ impl<'a> Vm<'a> {
                 self.pc += 1;
             }
             Instruction::Move => {
+                let angle = (self.registers[Register::A as usize] % 360) as f64;
+
                 // Convert to radians
-                let radians = (self.angle as f64) * (PI / 180.0);
+                let radians = angle * (PI / 180.0);
 
                 self.x += radians.cos();
                 self.y += radians.sin();
@@ -146,14 +140,6 @@ impl<'a> Vm<'a> {
                 self.pc += 1;
             }
             Instruction::Halt => self.terminated = true,
-            Instruction::SetAngle(angle) => {
-                self.angle = angle;
-                self.pc += 1;
-            }
-            Instruction::IncAngle(angle) => {
-                self.angle = (self.angle + angle) % 360;
-                self.pc += 1;
-            }
             Instruction::Loop { addr, times } => {
                 // We've already run the loop once to get to the loop instruction
                 let times = times - 1;
@@ -176,6 +162,10 @@ impl<'a> Vm<'a> {
                 self.registers[register as usize] = value;
                 self.pc += 1;
             }
+            Instruction::IncrementRegisterBy(register, value) => {
+                self.registers[register as usize] += value;
+                self.pc += 1;
+            }
             Instruction::StoreRegReg(r1, r2) => {
                 self.registers[r1 as usize] = self.registers[r2 as usize];
                 self.pc += 1;
@@ -196,11 +186,6 @@ impl<'a> Vm<'a> {
                 }
 
                 return None;
-            }
-            Instruction::SetAngleReg(register) => {
-                let angle = self.registers[register as usize];
-                self.angle = angle % 360;
-                self.pc += 1;
             }
             Instruction::Mul {
                 input,

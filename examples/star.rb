@@ -11,7 +11,7 @@ _STO_REG B, 5
     _DEC_REG C
     _JMP_NZ C, mark_2
 
-  _INC_ANG 144
+  _INC_REG_BY A, 144
 _DEC_REG B
 _JMP_NZ B, mark_1
 

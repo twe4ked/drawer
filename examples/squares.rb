@@ -5,8 +5,8 @@ _DRW
     _MOV
   _LOOP -1, 100
 
-  _INC_ANG 91
-_LOOP -7, 50
+  _INC_REG_BY A, 91
+_LOOP -8, 50
 
 # This is a worse version of the commented out version below
 
