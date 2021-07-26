@@ -81,17 +81,24 @@ impl Instruction {
 
         let opcode = p.read_u8();
 
-        let instruction = match opcode {
+        let high_bit_set = opcode & 0b1000_0000 != 0;
+
+        let instruction = match opcode & 0b0111_1111 {
             0x01 => Instruction::Draw,
             0x02 => Instruction::Move,
-            0x03 => Instruction::StoreRegister(p.register(), p.read_u16()),
+            0x03 => {
+                if high_bit_set {
+                    Instruction::StoreRegReg(p.register(), p.register())
+                } else {
+                    Instruction::StoreRegister(p.register(), p.read_u16())
+                }
+            }
             0x04 => Instruction::IncrementRegister(p.register()),
             0x05 => Instruction::IncrementRegisterBy(p.register(), p.read_u16()),
             0x06 => Instruction::DecrementRegister(p.register()),
             0x07 => Instruction::JumpIfNonZeroRegister(p.register(), p.read_u16()),
             0x08 => Instruction::Halt,
             0x09 => Instruction::Mul(p.register(), p.register(), p.read_u16()),
-            0x0a => Instruction::StoreRegReg(p.register(), p.register()),
             invalid => panic!("invalid instruction: {}", invalid),
         };
 
