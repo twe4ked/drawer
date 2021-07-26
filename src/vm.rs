@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::f64::consts::PI;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -11,6 +10,22 @@ pub enum Register {
     F = 5,
     G = 6,
     H = 7,
+}
+
+impl Register {
+    fn from_u8(r: u8) -> Self {
+        match r {
+            0 => Register::A,
+            1 => Register::B,
+            2 => Register::C,
+            3 => Register::D,
+            4 => Register::E,
+            5 => Register::F,
+            6 => Register::G,
+            7 => Register::H,
+            _ => panic!("invalid register: {}", r),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -37,48 +52,48 @@ pub enum Instruction {
     JumpIfNonZeroRegister(Register, u16),
 }
 
+struct Program<'a> {
+    buffer: &'a [u8],
+    cursor: usize,
+}
+
+impl<'a> Program<'a> {
+    fn read_u8(&mut self) -> u8 {
+        let item = self.buffer[self.cursor];
+        self.cursor += 1;
+        item
+    }
+
+    fn read_u16(&mut self) -> u16 {
+        let b1 = self.read_u8();
+        let b2 = self.read_u8();
+        u16::from_be_bytes([b2, b1])
+    }
+
+    fn register(&mut self) -> Register {
+        Register::from_u8(self.read_u8())
+    }
+}
+
 impl Instruction {
     pub fn parse_next(buffer: &[u8]) -> (usize, Instruction) {
-        // We always read at least one byte
-        let i = RefCell::new(1);
+        let mut p = Program { buffer, cursor: 0 };
 
-        let be_u16 = || {
-            let x = u16::from_be_bytes([buffer[*i.borrow() + 1], buffer[*i.borrow()]]);
-            *i.borrow_mut() += 2;
-            x
-        };
-
-        let register = || {
-            let x = match buffer[*i.borrow()] {
-                0 => Register::A,
-                1 => Register::B,
-                2 => Register::C,
-                3 => Register::D,
-                4 => Register::E,
-                5 => Register::F,
-                6 => Register::G,
-                7 => Register::H,
-                _ => panic!("invalid register: {}", buffer[*i.borrow()]),
-            };
-            *i.borrow_mut() += 1;
-            x
-        };
-
-        let instruction = match buffer[0] {
+        let instruction = match p.read_u8() {
             0x44 => Instruction::Draw,
             0x4d => Instruction::Move,
-            0x53 => Instruction::StoreRegister(register(), be_u16()),
-            0x49 => Instruction::IncrementRegister(register()),
-            0x69 => Instruction::IncrementRegisterBy(register(), be_u16()),
-            0x64 => Instruction::DecrementRegister(register()),
-            0x4a => Instruction::JumpIfNonZeroRegister(register(), be_u16()),
+            0x53 => Instruction::StoreRegister(p.register(), p.read_u16()),
+            0x49 => Instruction::IncrementRegister(p.register()),
+            0x69 => Instruction::IncrementRegisterBy(p.register(), p.read_u16()),
+            0x64 => Instruction::DecrementRegister(p.register()),
+            0x4a => Instruction::JumpIfNonZeroRegister(p.register(), p.read_u16()),
             0x48 => Instruction::Halt,
-            0x6d => Instruction::Mul(register(), register(), be_u16()),
-            0x32 => Instruction::StoreRegReg(register(), register()),
+            0x6d => Instruction::Mul(p.register(), p.register(), p.read_u16()),
+            0x32 => Instruction::StoreRegReg(p.register(), p.register()),
             invalid => panic!("invalid instruction: {}", invalid),
         };
 
-        (i.into_inner(), instruction)
+        (p.cursor, instruction)
     }
 }
 
