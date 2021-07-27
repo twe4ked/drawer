@@ -28,6 +28,24 @@ impl Register {
     }
 }
 
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum Value {
+    Uint(u16),
+    Register(Register),
+}
+
+impl Value {
+    fn unwrap_or_else<F>(&self, f: F) -> u16
+    where
+        F: Fn(usize) -> u16,
+    {
+        match self {
+            Value::Uint(v) => *v,
+            Value::Register(r) => f(*r as usize),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
     /// Toggle if we're drawing or not
@@ -37,13 +55,16 @@ pub enum Instruction {
     /// Move in direction of the current angle stored in register A
     Move,
     /// Multiply the value in R1 by `value` and store in R2
-    MultiplyImmediate(Register, Register, u16),
-    /// Set register
-    StoreImmediate(Register, u16),
+    Multiply(Register, Register, Value),
     /// Increment the register by an amount
-    AddImmediate(Register, u16),
-    /// Set register1 to the value of register2
-    Store(Register, Register),
+    Add(Register, Value),
+    /// Set the register `Rx` to either the immediate value `n`, or the value in the register `Ry`.
+    ///
+    /// ```text
+    /// STO Rx n
+    /// STO Rx Ry
+    /// ```
+    Store(Register, Value),
     /// Decrement register
     Decrement(Register),
     /// Increment register
@@ -86,31 +107,35 @@ impl Instruction {
         let instruction = match opcode & 0b0111_1111 {
             0x01 => Instruction::Draw,
             0x02 => Instruction::Move,
-            0x03 => {
+            0x03 => Instruction::Store(
+                p.register(),
                 if high_bit_set {
-                    Instruction::Store(p.register(), p.register())
+                    Value::Register(p.register())
                 } else {
-                    Instruction::StoreImmediate(p.register(), p.read_u16())
-                }
-            }
+                    Value::Uint(p.read_u16())
+                },
+            ),
             0x04 => Instruction::Increment(p.register()),
-            0x05 => {
+            0x05 => Instruction::Add(
+                p.register(),
                 if high_bit_set {
                     todo!("ADD Rx Ry")
                 } else {
-                    Instruction::AddImmediate(p.register(), p.read_u16())
-                }
-            }
+                    Value::Uint(p.read_u16())
+                },
+            ),
             0x06 => Instruction::Decrement(p.register()),
             0x07 => Instruction::JumpIfNonZero(p.register(), p.read_u16()),
             0x08 => Instruction::Halt,
-            0x09 => {
+            0x09 => Instruction::Multiply(
+                p.register(),
+                p.register(),
                 if high_bit_set {
                     todo!("MUL Rx Ry Rz")
                 } else {
-                    Instruction::MultiplyImmediate(p.register(), p.register(), p.read_u16())
-                }
-            }
+                    Value::Uint(p.read_u16())
+                },
+            ),
             invalid => panic!("invalid instruction: {:#04x}", invalid),
         };
 
@@ -162,14 +187,12 @@ impl<'a> Vm<'a> {
                 }
             }
             Instruction::Halt => self.terminated = true,
-            Instruction::StoreImmediate(register, value) => {
-                self.registers[register as usize] = value;
+            Instruction::Add(register, value) => {
+                self.registers[register as usize] += value.unwrap_or_else(|_| todo!());
             }
-            Instruction::AddImmediate(register, value) => {
-                self.registers[register as usize] += value;
-            }
-            Instruction::Store(r1, r2) => {
-                self.registers[r1 as usize] = self.registers[r2 as usize];
+            Instruction::Store(r1, value) => {
+                let value = value.unwrap_or_else(|r2| self.registers[r2 as usize]);
+                self.registers[r1 as usize] = value;
             }
             Instruction::Increment(register) => {
                 self.registers[register as usize] += 1;
@@ -183,7 +206,8 @@ impl<'a> Vm<'a> {
                     return None;
                 }
             }
-            Instruction::MultiplyImmediate(r1, r2, value) => {
+            Instruction::Multiply(r1, r2, value) => {
+                let value = value.unwrap_or_else(|_| todo!());
                 self.registers[r2 as usize] = self.registers[r1 as usize] * value;
             }
         }
