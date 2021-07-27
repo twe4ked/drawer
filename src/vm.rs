@@ -54,7 +54,11 @@ pub enum Instruction {
     Halt,
     /// Move in direction of the current angle stored in register A
     Move,
-    /// Multiply the value in R1 by `value` and store in R2
+    /// Set the register `Rx` to the product of `Ry` and the immediate value `n`.
+    ///
+    /// ```text
+    /// STO Rx Ry n
+    /// ```
     Multiply(Register, Register, Value),
     /// Increment the register by an amount
     Add(Register, Value),
@@ -208,7 +212,7 @@ impl<'a> Vm<'a> {
             }
             Instruction::Multiply(r1, r2, value) => {
                 let value = value.unwrap_or_else(|_| todo!());
-                self.registers[r2 as usize] = self.registers[r1 as usize] * value;
+                self.registers[r1 as usize] = self.registers[r2 as usize] * value;
             }
         }
 

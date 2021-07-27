@@ -16,7 +16,7 @@ mark_1:
     JNZ C mark_2:
 
   # Multiply the current value
-  MUL D B 15
+  MUL B D 15
   # And then increment the ..
   STO A B
 
