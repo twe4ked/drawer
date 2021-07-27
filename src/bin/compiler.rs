@@ -110,7 +110,7 @@ fn main() {
                     instruction_count += 1;
                 }
                 _ => {
-                    if prefix.ends_with(":") {
+                    if prefix.ends_with(':') {
                         if labels.contains_key(prefix) {
                             panic!("re-used label: {}", prefix);
                         } else {
