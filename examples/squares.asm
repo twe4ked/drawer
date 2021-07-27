@@ -1,29 +1,29 @@
 DRW
 
-STO B 50
-  mark_1:
+STO B 512
+STO C 1
 
-  STO C 200
-    mark_2:
-    MOV
-    DEC C
-    JNZ C mark_2:
+main_loop:
+	; If C > 507, skip to continue:
+	JGT C 507 continue:
 
-  ADD A 91
+		; Move C times
+		STO E C
+		move_loop:
+			MOV
+			DEC E
+			JNZ E move_loop:
 
-DEC B
-JNZ B mark_1:
+		; Multiply the main loop count by 91 and store in D, then add D to A
+		MUL D C 91
+		STO A D
+
+	continue:
+
+	INC C
+
+	; Main loop increment
+	DEC B
+	JNZ B main_loop:
 
 HLT
-
-# This is a worse version of the commented out version below
-
-# x = 0
-# while x < 512 do
-#   if x < 508
-#     program += move_instruction(x)
-#     program += angle_instruction((x * 91) % 360)
-#   end
-#
-#   x += 1
-# end
