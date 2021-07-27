@@ -201,7 +201,8 @@ impl<'a> Vm<'a> {
             }
             Instruction::Halt => self.terminated = true,
             Instruction::Add(register, value) => {
-                self.registers[register as usize] += value.unwrap_or_else(|_| todo!());
+                let value = value.unwrap_or_else(|r2| self.registers[r2 as usize]);
+                self.registers[register as usize] += value;
             }
             Instruction::Store(r1, value) => {
                 let value = value.unwrap_or_else(|r2| self.registers[r2 as usize]);

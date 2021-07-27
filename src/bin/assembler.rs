@@ -147,11 +147,18 @@ fn main() {
                     instruction_count += 1;
                 }
                 "ADD" => {
-                    out.push(Opcode::ADD as u8);
-                    let register = parse_register(parts.next());
-                    out.push(register);
-                    let value = parse_u16(parts.next());
-                    out.extend_from_slice(&value.to_le_bytes());
+                    let r1 = parse_register(parts.next());
+                    let operand_2 = parts.next().expect("missing operand 2");
+                    if let Some(r2) = try_parse_register(operand_2) {
+                        out.push(Opcode::ADD as u8 | 0x80);
+                        out.push(r1);
+                        out.push(r2);
+                    } else {
+                        out.push(Opcode::ADD as u8);
+                        out.push(r1);
+                        let value = parse_u16(Some(operand_2));
+                        out.extend_from_slice(&value.to_le_bytes());
+                    }
                     instruction_count += 1;
                 }
                 "HLT" => {
