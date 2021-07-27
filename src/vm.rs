@@ -90,9 +90,7 @@ impl<'a> Program<'a> {
     }
 
     fn read_u16(&mut self) -> u16 {
-        let b1 = self.read_u8();
-        let b2 = self.read_u8();
-        u16::from_be_bytes([b2, b1])
+        u16::from_le_bytes([self.read_u8(), self.read_u8()])
     }
 
     fn register(&mut self) -> Register {
