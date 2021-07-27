@@ -75,6 +75,8 @@ pub enum Instruction {
     Increment(Register),
     /// Jump if register is non-zero
     JumpIfNonZero(Register, u16),
+    /// TODO
+    JumpIfGreaterThan(Register, Value, u16),
 }
 
 struct Program<'a> {
@@ -121,13 +123,22 @@ impl Instruction {
             0x05 => Instruction::Add(
                 p.register(),
                 if high_bit_set {
-                    todo!("ADD Rx Ry")
+                    Value::Register(p.register())
                 } else {
                     Value::Uint(p.read_u16())
                 },
             ),
             0x06 => Instruction::Decrement(p.register()),
             0x07 => Instruction::JumpIfNonZero(p.register(), p.read_u16()),
+            0x0a => Instruction::JumpIfGreaterThan(
+                p.register(),
+                if high_bit_set {
+                    todo!()
+                } else {
+                    Value::Uint(p.read_u16())
+                },
+                p.read_u16(),
+            ),
             0x08 => Instruction::Halt,
             0x09 => Instruction::Multiply(
                 p.register(),
@@ -204,6 +215,13 @@ impl<'a> Vm<'a> {
             }
             Instruction::JumpIfNonZero(register, addr) => {
                 if self.registers[register as usize] != 0 {
+                    self.pc = addr as usize;
+                    return None;
+                }
+            }
+            Instruction::JumpIfGreaterThan(register, value, addr) => {
+                let value = value.unwrap_or_else(|_| todo!());
+                if self.registers[register as usize] > value {
                     self.pc = addr as usize;
                     return None;
                 }

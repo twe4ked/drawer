@@ -12,6 +12,7 @@ enum Opcode {
     JNZ = 0x07,
     HLT = 0x08,
     MUL = 0x09,
+    JGT = 0x0a,
 }
 
 fn read_stdin() -> String {
@@ -118,6 +119,18 @@ fn main() {
                     out.push(Opcode::JNZ as u8);
                     let register = parse_register(parts.next());
                     out.push(register);
+                    let label = parts.next().expect("missing label");
+                    let addr = labels.get(label).expect("label not found");
+                    out.extend_from_slice(&addr.to_le_bytes());
+                    instruction_count += 1;
+                }
+                "JGT" => {
+                    out.push(Opcode::JGT as u8);
+                    let register = parse_register(parts.next());
+                    out.push(register);
+                    // TODO: Support register as second operand
+                    let value = parse_u16(parts.next());
+                    out.extend_from_slice(&value.to_le_bytes());
                     let label = parts.next().expect("missing label");
                     let addr = labels.get(label).expect("label not found");
                     out.extend_from_slice(&addr.to_le_bytes());
