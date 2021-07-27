@@ -78,7 +78,7 @@ fn main() {
 
         if let Some(prefix) = parts.next() {
             match prefix {
-                "#" => continue,
+                "#" | ";" => continue,
                 "DRW" => {
                     out.push(Opcode::DRW as u8);
                     instruction_count += 1;
