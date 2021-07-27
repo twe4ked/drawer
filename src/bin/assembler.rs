@@ -49,7 +49,31 @@ fn main() {
     let mut out = Vec::new();
     let mut labels = HashMap::<&str, u16>::new();
 
-    for line in read_stdin().lines() {
+    let input = read_stdin();
+
+    // Find labels
+    for line in input.lines() {
+        let mut parts = line.trim().split_whitespace();
+
+        if let Some(prefix) = parts.next() {
+            match prefix {
+                "DRW" | "MOV" | "STO" | "INC" | "DEC" | "JNZ" | "JGT" | "MUL" | "ADD" | "HLT" => {
+                    instruction_count += 1
+                }
+                _ => {
+                    if prefix.ends_with(':') {
+                        if labels.contains_key(prefix) {
+                            panic!("re-used label: {}", prefix);
+                        } else {
+                            labels.insert(prefix, instruction_count);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for line in input.lines() {
         let mut parts = line.trim().split_whitespace();
 
         if let Some(prefix) = parts.next() {
@@ -123,11 +147,7 @@ fn main() {
                 }
                 _ => {
                     if prefix.ends_with(':') {
-                        if labels.contains_key(prefix) {
-                            panic!("re-used label: {}", prefix);
-                        } else {
-                            labels.insert(prefix, instruction_count);
-                        }
+                        // Labels are already processed, move on
                     } else {
                         panic!("bad prefix: {}", prefix)
                     }
