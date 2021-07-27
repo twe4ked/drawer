@@ -2,6 +2,18 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{stdin, Read, Write};
 
+enum Opcode {
+    DRW = 0x01,
+    MOV = 0x02,
+    STO = 0x03,
+    INC = 0x04,
+    ADD = 0x05,
+    DEC = 0x06,
+    JNZ = 0x07,
+    HLT = 0x08,
+    MUL = 0x09,
+}
+
 fn read_stdin() -> String {
     let mut buffer = String::new();
     stdin()
@@ -44,22 +56,22 @@ fn main() {
             match prefix {
                 "#" => continue,
                 "DRW" => {
-                    out.push(0x01);
+                    out.push(Opcode::DRW as u8);
                     instruction_count += 1;
                 }
                 "MOV" => {
-                    out.push(0x02);
+                    out.push(Opcode::MOV as u8);
                     instruction_count += 1;
                 }
                 "STO" => {
                     let r1 = parse_register(parts.next());
                     let operand_2 = parts.next().expect("missing operand 2");
                     if let Some(r2) = try_parse_register(operand_2) {
-                        out.push(0x03 | 0x80);
+                        out.push(Opcode::STO as u8 | 0x80);
                         out.push(r1);
                         out.push(r2);
                     } else {
-                        out.push(0x03);
+                        out.push(Opcode::STO as u8);
                         out.push(r1);
                         let value = parse_u16(Some(operand_2));
                         out.extend_from_slice(&value.to_le_bytes());
@@ -67,19 +79,19 @@ fn main() {
                     instruction_count += 1;
                 }
                 "INC" => {
-                    out.push(0x04);
+                    out.push(Opcode::INC as u8);
                     let register = parse_register(parts.next());
                     out.push(register);
                     instruction_count += 1;
                 }
                 "DEC" => {
-                    out.push(0x06);
+                    out.push(Opcode::DEC as u8);
                     let register = parse_register(parts.next());
                     out.push(register);
                     instruction_count += 1;
                 }
                 "JNZ" => {
-                    out.push(0x07);
+                    out.push(Opcode::JNZ as u8);
                     let register = parse_register(parts.next());
                     out.push(register);
                     let label = parts.next().expect("missing label");
@@ -88,7 +100,7 @@ fn main() {
                     instruction_count += 1;
                 }
                 "MUL" => {
-                    out.push(0x09);
+                    out.push(Opcode::MUL as u8);
                     let register = parse_register(parts.next());
                     out.push(register);
                     let register = parse_register(parts.next());
@@ -98,7 +110,7 @@ fn main() {
                     instruction_count += 1;
                 }
                 "ADD" => {
-                    out.push(0x05);
+                    out.push(Opcode::ADD as u8);
                     let register = parse_register(parts.next());
                     out.push(register);
                     let value = parse_u16(parts.next());
@@ -106,7 +118,7 @@ fn main() {
                     instruction_count += 1;
                 }
                 "HLT" => {
-                    out.push(0x08);
+                    out.push(Opcode::HLT as u8);
                     instruction_count += 1;
                 }
                 _ => {
