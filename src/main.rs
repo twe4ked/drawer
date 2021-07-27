@@ -1,4 +1,6 @@
 use minifb::{Scale, Window, WindowOptions};
+use std::sync::mpsc::{channel, Sender};
+use std::thread;
 
 mod buffer;
 mod vm;
@@ -50,28 +52,47 @@ fn main() {
     // Limit to max ~60 fps update rate
     window.limit_update_rate(Some(std::time::Duration::from_micros(16600)));
 
-    let mut vm = Vm::new(&program);
+    let (tx, rx) = channel();
+    let worker = thread::spawn(move || {
+        let mut vm = Vm::new(&program);
+        while !vm.is_terminated() {
+            if let Some((x, y, color)) = vm.step() {
+                tx.send((x, y, color)).unwrap();
+            }
+        }
+
+        eprintln!("worker finished");
+    });
+
     let mut buffer = Buffer::new(WIDTH, HEIGHT);
 
     while window.is_open() {
-        if !vm.is_terminated() {
-            if let Some((x, y, color)) = vm.step() {
-                // We want 0,0 to be in the center of the buffer
-                let x = (WIDTH / 2) as isize + x;
-                let y = (HEIGHT / 2) as isize + y;
+        for (x, y, color) in rx.try_iter() {
+            // We want 0,0 to be in the center of the buffer
+            let x = (WIDTH as isize / 2) + x;
+            let y = (HEIGHT as isize / 2) + y;
 
-                use std::convert::TryFrom;
+            use std::convert::TryFrom;
 
-                buffer.set_pixel(
-                    usize::try_from(x).expect("invalid x coordinate"),
-                    usize::try_from(y).expect("invalid y coordinate"),
-                    color,
-                );
+            let x = usize::try_from(x);
+            if x.is_err() {
+                eprintln!("invalid x coordinate");
+                break;
             }
+
+            let y = usize::try_from(y);
+            if y.is_err() {
+                eprintln!("invalid y coordinate");
+                break;
+            }
+
+            buffer.set_pixel(x.unwrap(), y.unwrap(), color);
         }
 
         window
             .update_with_buffer(&buffer.buffer(), WIDTH, HEIGHT)
             .expect("unable to update buffer");
     }
+
+    worker.join().unwrap()
 }
