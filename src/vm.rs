@@ -207,17 +207,29 @@ impl<'a> Vm<'a> {
             Instruction::Halt => self.terminated = true,
             Instruction::Add(register, value) => {
                 let value = value.unwrap_or_else(|r2| self.registers[r2 as usize]);
-                self.registers[register as usize] += value;
+                let (value, overflowed) = self.registers[register as usize].overflowing_add(value);
+                if overflowed {
+                    eprintln!("warning: {:?} overflowed", register);
+                }
+                self.registers[register as usize] = value;
             }
             Instruction::Store(r1, value) => {
                 let value = value.unwrap_or_else(|r2| self.registers[r2 as usize]);
                 self.registers[r1 as usize] = value;
             }
             Instruction::Increment(register) => {
-                self.registers[register as usize] += 1;
+                let (value, overflowed) = self.registers[register as usize].overflowing_add(1);
+                if overflowed {
+                    eprintln!("warning: {:?} overflowed", register);
+                }
+                self.registers[register as usize] = value;
             }
             Instruction::Decrement(register) => {
-                self.registers[register as usize] -= 1;
+                let (value, overflowed) = self.registers[register as usize].overflowing_sub(1);
+                if overflowed {
+                    eprintln!("warning: {:?} overflowed", register);
+                }
+                self.registers[register as usize] = value;
             }
             Instruction::JumpIfNonZero(register, addr) => {
                 if self.registers[register as usize] != 0 {
@@ -234,7 +246,11 @@ impl<'a> Vm<'a> {
             }
             Instruction::Multiply(r1, r2, value) => {
                 let value = value.unwrap_or_else(|_| todo!());
-                self.registers[r1 as usize] = self.registers[r2 as usize] * value;
+                let (value, overflowed) = self.registers[r2 as usize].overflowing_mul(value);
+                if overflowed {
+                    eprintln!("warning: {:?} overflowed", r2);
+                }
+                self.registers[r1 as usize] = value;
             }
         }
 
