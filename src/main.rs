@@ -1,12 +1,9 @@
 use minifb::{Scale, Window, WindowOptions};
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::channel;
 use std::thread;
 
-mod buffer;
-mod vm;
-
-use buffer::Buffer;
-use vm::{Instruction, Vm};
+use drawer::buffer::Buffer;
+use drawer::vm::{Instruction, Vm};
 
 const WIDTH: usize = 1024;
 const HEIGHT: usize = 1024;

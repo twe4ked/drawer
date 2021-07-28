@@ -2,18 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{stdin, Read, Write};
 
-enum Opcode {
-    DRW = 0x01,
-    MOV = 0x02,
-    STO = 0x03,
-    INC = 0x04,
-    ADD = 0x05,
-    DEC = 0x06,
-    JNZ = 0x07,
-    HLT = 0x08,
-    MUL = 0x09,
-    JGT = 0x0a,
-}
+use drawer::Opcode;
 
 fn read_stdin() -> String {
     let mut buffer = String::new();

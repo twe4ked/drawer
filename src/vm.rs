@@ -1,4 +1,7 @@
+use std::convert::TryFrom;
 use std::f64::consts::PI;
+
+use crate::Opcode;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Register {
@@ -108,10 +111,13 @@ impl Instruction {
 
         let high_bit_set = opcode & 0b1000_0000 != 0;
 
-        let instruction = match opcode & 0b0111_1111 {
-            0x01 => Instruction::Draw,
-            0x02 => Instruction::Move,
-            0x03 => Instruction::Store(
+        let opcode = Opcode::try_from(opcode & 0b0111_1111)
+            .unwrap_or_else(|_| panic!("invalid instruction: {:#04x}", opcode));
+
+        let instruction = match opcode {
+            Opcode::DRW => Instruction::Draw,
+            Opcode::MOV => Instruction::Move,
+            Opcode::STO => Instruction::Store(
                 p.register(),
                 if high_bit_set {
                     Value::Register(p.register())
@@ -119,8 +125,8 @@ impl Instruction {
                     Value::Uint(p.read_u16())
                 },
             ),
-            0x04 => Instruction::Increment(p.register()),
-            0x05 => Instruction::Add(
+            Opcode::INC => Instruction::Increment(p.register()),
+            Opcode::ADD => Instruction::Add(
                 p.register(),
                 if high_bit_set {
                     Value::Register(p.register())
@@ -128,9 +134,9 @@ impl Instruction {
                     Value::Uint(p.read_u16())
                 },
             ),
-            0x06 => Instruction::Decrement(p.register()),
-            0x07 => Instruction::JumpIfNonZero(p.register(), p.read_u16()),
-            0x0a => Instruction::JumpIfGreaterThan(
+            Opcode::DEC => Instruction::Decrement(p.register()),
+            Opcode::JNZ => Instruction::JumpIfNonZero(p.register(), p.read_u16()),
+            Opcode::JGT => Instruction::JumpIfGreaterThan(
                 p.register(),
                 if high_bit_set {
                     todo!()
@@ -139,8 +145,8 @@ impl Instruction {
                 },
                 p.read_u16(),
             ),
-            0x08 => Instruction::Halt,
-            0x09 => Instruction::Multiply(
+            Opcode::HLT => Instruction::Halt,
+            Opcode::MUL => Instruction::Multiply(
                 p.register(),
                 p.register(),
                 if high_bit_set {
@@ -149,7 +155,6 @@ impl Instruction {
                     Value::Uint(p.read_u16())
                 },
             ),
-            invalid => panic!("invalid instruction: {:#04x}", invalid),
         };
 
         (p.cursor, instruction)
