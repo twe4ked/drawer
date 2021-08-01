@@ -137,19 +137,20 @@ impl Instruction {
         let opcode = Opcode::try_from(opcode & 0b0111_1111)
             .unwrap_or_else(|_| panic!("invalid instruction: {:#04x}", opcode));
 
+        use Instruction::*;
+        use Opcode::*;
+
         let instruction = match opcode {
-            Opcode::DRW => Instruction::Draw,
-            Opcode::MOV => Instruction::Move,
-            Opcode::STO => Instruction::Store(p.register(), p.value(high_bit_set)),
-            Opcode::INC => Instruction::Increment(p.register()),
-            Opcode::ADD => Instruction::Add(p.register(), p.value(high_bit_set)),
-            Opcode::DEC => Instruction::Decrement(p.register()),
-            Opcode::JNZ => Instruction::JumpIfNonZero(p.register(), p.read_u16()),
-            Opcode::JGT => {
-                Instruction::JumpIfGreaterThan(p.register(), p.value(high_bit_set), p.read_u16())
-            }
-            Opcode::HLT => Instruction::Halt,
-            Opcode::MUL => Instruction::Multiply(p.register(), p.value(high_bit_set)),
+            DRW => Draw,
+            MOV => Move,
+            STO => Store(p.register(), p.value(high_bit_set)),
+            INC => Increment(p.register()),
+            ADD => Add(p.register(), p.value(high_bit_set)),
+            DEC => Decrement(p.register()),
+            JNZ => JumpIfNonZero(p.register(), p.read_u16()),
+            JGT => JumpIfGreaterThan(p.register(), p.value(high_bit_set), p.read_u16()),
+            HLT => Halt,
+            MUL => Multiply(p.register(), p.value(high_bit_set)),
         };
 
         (p.cursor, instruction)
