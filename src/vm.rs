@@ -4,7 +4,7 @@ use std::f64::consts::PI;
 use crate::Opcode;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub enum Register {
+pub enum UintRegister {
     A = 0,
     B = 1,
     C = 2,
@@ -15,18 +15,51 @@ pub enum Register {
     H = 7,
 }
 
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum FloatRegister {
+    S = 0,
+    T = 1,
+    U = 2,
+    V = 3,
+    W = 4,
+    X = 5,
+    Y = 6,
+    Z = 7,
+}
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum Register {
+    UintRegister(UintRegister),
+    FloatRegister(FloatRegister),
+}
+
 impl Register {
     fn from_u8(r: u8) -> Self {
         match r {
-            0 => Register::A,
-            1 => Register::B,
-            2 => Register::C,
-            3 => Register::D,
-            4 => Register::E,
-            5 => Register::F,
-            6 => Register::G,
-            7 => Register::H,
+            0x0 => Register::UintRegister(UintRegister::A),
+            0x1 => Register::UintRegister(UintRegister::B),
+            0x2 => Register::UintRegister(UintRegister::C),
+            0x3 => Register::UintRegister(UintRegister::D),
+            0x4 => Register::UintRegister(UintRegister::E),
+            0x5 => Register::UintRegister(UintRegister::F),
+            0x6 => Register::UintRegister(UintRegister::G),
+            0x7 => Register::UintRegister(UintRegister::H),
+            0x8 => Register::FloatRegister(FloatRegister::S),
+            0x9 => Register::FloatRegister(FloatRegister::T),
+            0xa => Register::FloatRegister(FloatRegister::U),
+            0xb => Register::FloatRegister(FloatRegister::V),
+            0xc => Register::FloatRegister(FloatRegister::W),
+            0xd => Register::FloatRegister(FloatRegister::X),
+            0xe => Register::FloatRegister(FloatRegister::Y),
+            0xf => Register::FloatRegister(FloatRegister::Z),
             _ => panic!("invalid register: {}", r),
+        }
+    }
+
+    fn unwrap_uint_register(self) -> UintRegister {
+        match self {
+            Register::UintRegister(r) => r,
+            _ => panic!("not a UintRegister"),
         }
     }
 }
@@ -34,6 +67,7 @@ impl Register {
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Value {
     Uint(u16),
+    Float(f64),
     Register(Register),
 }
 
@@ -44,7 +78,11 @@ impl Value {
     {
         match self {
             Value::Uint(v) => *v,
-            Value::Register(r) => f(*r as usize),
+            Value::Register(r) => match r {
+                Register::UintRegister(r) => f(*r as usize),
+                _ => todo!("unhandled: {:?}", self),
+            },
+            _ => todo!("unhandled: {:?}", self),
         }
     }
 }
@@ -192,7 +230,7 @@ impl<'a> Vm<'a> {
                 self.draw = !self.draw;
             }
             Instruction::Move => {
-                let angle = (self.registers[Register::A as usize] % 360) as f64;
+                let angle = (self.registers[UintRegister::A as usize] % 360) as f64;
 
                 // Convert to radians
                 let radians = angle * (PI / 180.0);
@@ -206,6 +244,7 @@ impl<'a> Vm<'a> {
             }
             Instruction::Halt => self.terminated = true,
             Instruction::Add(register, value) => {
+                let register = register.unwrap_uint_register();
                 let value = value.unwrap_or_else(|r2| self.registers[r2 as usize]);
                 let (value, overflowed) = self.registers[register as usize].overflowing_add(value);
                 if overflowed {
@@ -214,10 +253,12 @@ impl<'a> Vm<'a> {
                 self.registers[register as usize] = value;
             }
             Instruction::Store(r1, value) => {
+                let r1 = r1.unwrap_uint_register();
                 let value = value.unwrap_or_else(|r2| self.registers[r2 as usize]);
                 self.registers[r1 as usize] = value;
             }
             Instruction::Increment(register) => {
+                let register = register.unwrap_uint_register();
                 let (value, overflowed) = self.registers[register as usize].overflowing_add(1);
                 if overflowed {
                     eprintln!("warning: {:?} overflowed", register);
@@ -225,6 +266,7 @@ impl<'a> Vm<'a> {
                 self.registers[register as usize] = value;
             }
             Instruction::Decrement(register) => {
+                let register = register.unwrap_uint_register();
                 let (value, overflowed) = self.registers[register as usize].overflowing_sub(1);
                 if overflowed {
                     eprintln!("warning: {:?} overflowed", register);
@@ -232,12 +274,14 @@ impl<'a> Vm<'a> {
                 self.registers[register as usize] = value;
             }
             Instruction::JumpIfNonZero(register, addr) => {
+                let register = register.unwrap_uint_register();
                 if self.registers[register as usize] != 0 {
                     self.pc = addr as usize;
                     return None;
                 }
             }
             Instruction::JumpIfGreaterThan(register, value, addr) => {
+                let register = register.unwrap_uint_register();
                 let value = value.unwrap_or_else(|_| todo!());
                 if self.registers[register as usize] > value {
                     self.pc = addr as usize;
@@ -245,6 +289,8 @@ impl<'a> Vm<'a> {
                 }
             }
             Instruction::Multiply(r1, r2, value) => {
+                let r1 = r1.unwrap_uint_register();
+                let r2 = r2.unwrap_uint_register();
                 let value = value.unwrap_or_else(|_| todo!());
                 let (value, overflowed) = self.registers[r2 as usize].overflowing_mul(value);
                 if overflowed {

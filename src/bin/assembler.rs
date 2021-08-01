@@ -14,14 +14,22 @@ fn read_stdin() -> String {
 
 fn try_parse_register(input: &str) -> Option<u8> {
     match input {
-        "A" => Some(0),
-        "B" => Some(1),
-        "C" => Some(2),
-        "D" => Some(3),
-        "E" => Some(4),
-        "F" => Some(5),
-        "G" => Some(6),
-        "H" => Some(7),
+        "A" => Some(0x0),
+        "B" => Some(0x1),
+        "C" => Some(0x2),
+        "D" => Some(0x3),
+        "E" => Some(0x4),
+        "F" => Some(0x5),
+        "G" => Some(0x6),
+        "H" => Some(0x7),
+        "S" => Some(0x8),
+        "T" => Some(0x9),
+        "U" => Some(0xa),
+        "V" => Some(0xb),
+        "W" => Some(0xc),
+        "X" => Some(0xd),
+        "Y" => Some(0xe),
+        "Z" => Some(0xf),
         _ => None,
     }
 }
