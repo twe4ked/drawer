@@ -63,6 +63,19 @@ pub enum Value {
     Register(Register),
 }
 
+impl Value {
+    fn into_f64(self, vm: &Vm) -> f64 {
+        match self {
+            Value::Uint(v) => v as f64,
+            Value::Float(v) => v,
+            Value::Register(r) => match r {
+                Register::UintRegister(r) => vm.uint_registers[r as usize] as f64,
+                Register::FloatRegister(r) => vm.float_registers[r as usize],
+            },
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
     /// Toggle if we're drawing or not
@@ -201,125 +214,60 @@ impl<'a> Vm<'a> {
                 self.float_registers[FloatRegister::Y as usize] += radians.sin();
             }
             Instruction::Halt => self.terminated = true,
-            Instruction::Add(register, value) => match register {
-                Register::UintRegister(register) => {
-                    let value = self.unwrap_uint_value(value);
-                    let (value, overflowed) =
-                        self.uint_registers[register as usize].overflowing_add(value);
-                    if overflowed {
-                        eprintln!("warning: {:?} overflowed", register);
-                    }
-                    self.uint_registers[register as usize] = value;
-                }
-                Register::FloatRegister(register) => {
-                    self.float_registers[register as usize] += self.unwrap_float_value(value);
-                }
-            },
-            Instruction::Sub(register, value) => match register {
-                Register::UintRegister(register) => {
-                    let value = self.unwrap_uint_value(value);
-                    let (value, overflowed) =
-                        self.uint_registers[register as usize].overflowing_sub(value);
-                    if overflowed {
-                        eprintln!("warning: {:?} overflowed", register);
-                    }
-                    self.uint_registers[register as usize] = value;
-                }
-                Register::FloatRegister(register) => {
-                    self.float_registers[register as usize] -= self.unwrap_float_value(value);
-                }
-            },
-            Instruction::Store(r1, value) => match r1 {
-                Register::UintRegister(r1) => {
-                    self.uint_registers[r1 as usize] = self.unwrap_uint_value(value);
-                }
-                Register::FloatRegister(r1) => {
-                    self.float_registers[r1 as usize] = self.unwrap_float_value(value);
-                }
-            },
-            Instruction::Increment(register) => match register {
-                Register::UintRegister(register) => {
-                    let (value, overflowed) =
-                        self.uint_registers[register as usize].overflowing_add(1);
-                    if overflowed {
-                        eprintln!("warning: {:?} overflowed", register);
-                    }
-                    self.uint_registers[register as usize] = value;
-                }
-                Register::FloatRegister(register) => {
-                    self.float_registers[register as usize] += 1.0;
-                }
-            },
-            Instruction::Decrement(register) => match register {
-                Register::UintRegister(register) => {
-                    let (value, overflowed) =
-                        self.uint_registers[register as usize].overflowing_sub(1);
-                    if overflowed {
-                        eprintln!("warning: {:?} overflowed", register);
-                    }
-                    self.uint_registers[register as usize] = value;
-                }
-                Register::FloatRegister(register) => {
-                    self.float_registers[register as usize] -= 1.0;
-                }
-            },
+            Instruction::Add(register, value) => {
+                let value_1 = self.get_register(register);
+                self.set_register(register, value_1 + value.into_f64(&self));
+            }
+            Instruction::Sub(register, value) => {
+                let value_1 = self.get_register(register);
+                self.set_register(register, value_1 - value.into_f64(&self));
+            }
+            Instruction::Store(register, value) => {
+                self.set_register(register, value.into_f64(&self))
+            }
+            Instruction::Increment(register) => {
+                self.set_register(register, self.get_register(register) + 1.0);
+            }
+            Instruction::Decrement(register) => {
+                self.set_register(register, self.get_register(register) - 1.0);
+            }
             Instruction::JumpIfNonZero(register, addr) => {
-                if self.check_conditional(
-                    register,
-                    Value::Uint(0),
-                    |a: f64, b: f64| (a - b).abs() > f64::EPSILON, // a != b
-                ) {
+                // a != b
+                if (self.get_register(register) - 0.0).abs() > f64::EPSILON {
                     self.pc = addr as usize;
                     return None;
                 }
             }
             Instruction::JumpIfEqual(register, value, addr) => {
-                if self.check_conditional(
-                    register,
-                    value,
-                    |a, b| (a - b).abs() < f64::EPSILON, // a == b
-                ) {
+                // a == b
+                if (self.get_register(register) - value.into_f64(&self)).abs() < f64::EPSILON {
                     self.pc = addr as usize;
                     return None;
                 }
             }
             Instruction::JumpIfNotEqual(register, value, addr) => {
-                if self.check_conditional(
-                    register,
-                    value,
-                    |a, b| (a - b).abs() > f64::EPSILON, // a != b
-                ) {
+                // a != b
+                if (self.get_register(register) - value.into_f64(&self)).abs() > f64::EPSILON {
                     self.pc = addr as usize;
                     return None;
                 }
             }
             Instruction::JumpIfGreaterThan(register, value, addr) => {
-                if self.check_conditional(register, value, |a, b| a > b) {
+                if self.get_register(register) > value.into_f64(&self) {
                     self.pc = addr as usize;
                     return None;
                 }
             }
             Instruction::JumpIfLessThan(register, value, addr) => {
-                if self.check_conditional(register, value, |a, b| a < b) {
+                if self.get_register(register) < value.into_f64(&self) {
                     self.pc = addr as usize;
                     return None;
                 }
             }
-            Instruction::Multiply(register, value) => match register {
-                Register::UintRegister(register) => {
-                    let value = self.unwrap_uint_value(value);
-                    let (value, overflowed) =
-                        self.uint_registers[register as usize].overflowing_mul(value);
-                    if overflowed {
-                        eprintln!("warning: {:?} overflowed", register);
-                    }
-                    self.uint_registers[register as usize] = value;
-                }
-                Register::FloatRegister(register) => {
-                    let value = self.unwrap_float_value(value);
-                    self.float_registers[register as usize] *= value;
-                }
-            },
+            Instruction::Multiply(register, value) => {
+                let value_1 = self.get_register(register);
+                self.set_register(register, value_1 * value.into_f64(&self));
+            }
         }
 
         self.pc += 1;
@@ -335,43 +283,17 @@ impl<'a> Vm<'a> {
         }
     }
 
-    fn check_conditional<F>(&self, register: Register, value: Value, f: F) -> bool
-    where
-        F: Fn(f64, f64) -> bool,
-    {
+    fn set_register(&mut self, register: Register, value: f64) {
         match register {
-            Register::UintRegister(r) => {
-                let value = self.unwrap_uint_value(value);
-                // NOTE: Not ideal to be converting u16 to f64 before we run the predicate function
-                // but otherwise we can't re-use the same function.
-                f(self.uint_registers[r as usize] as f64, value as f64)
-            }
-            Register::FloatRegister(r) => {
-                let value = self.unwrap_float_value(value);
-                f(self.float_registers[r as usize], value)
-            }
+            Register::UintRegister(r) => self.uint_registers[r as usize] = value as u16,
+            Register::FloatRegister(r) => self.float_registers[r as usize] = value,
         }
     }
 
-    fn unwrap_uint_value(&self, value: Value) -> u16 {
-        match value {
-            Value::Uint(v) => v,
-            Value::Float(v) => v as u16,
-            Value::Register(r) => match r {
-                Register::UintRegister(r) => self.uint_registers[r as usize],
-                Register::FloatRegister(r) => self.float_registers[r as usize] as u16,
-            },
-        }
-    }
-
-    fn unwrap_float_value(&self, value: Value) -> f64 {
-        match value {
-            Value::Uint(v) => v as f64,
-            Value::Float(v) => v,
-            Value::Register(r) => match r {
-                Register::UintRegister(r) => self.uint_registers[r as usize] as f64,
-                Register::FloatRegister(r) => self.float_registers[r as usize],
-            },
+    fn get_register(&self, register: Register) -> f64 {
+        match register {
+            Register::UintRegister(r) => self.uint_registers[r as usize] as f64,
+            Register::FloatRegister(r) => self.float_registers[r as usize],
         }
     }
 
