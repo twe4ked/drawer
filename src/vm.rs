@@ -55,13 +55,6 @@ impl Register {
             _ => panic!("invalid register: {}", r),
         }
     }
-
-    fn unwrap_uint_register(self) -> UintRegister {
-        match self {
-            Register::UintRegister(r) => r,
-            _ => panic!("not a UintRegister"),
-        }
-    }
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -207,6 +200,7 @@ pub struct Vm<'a> {
     program: &'a [Instruction],
     terminated: bool,
     registers: [u16; 8],
+    float_registers: [f64; 8],
 }
 
 impl<'a> Vm<'a> {
@@ -219,6 +213,7 @@ impl<'a> Vm<'a> {
             program,
             terminated: false,
             registers: Default::default(),
+            float_registers: Default::default(),
         }
     }
 
@@ -243,65 +238,132 @@ impl<'a> Vm<'a> {
                 }
             }
             Instruction::Halt => self.terminated = true,
-            Instruction::Add(register, value) => {
-                let register = register.unwrap_uint_register();
-                let value = value.unwrap_or_else(|r2| self.registers[r2 as usize]);
-                let (value, overflowed) = self.registers[register as usize].overflowing_add(value);
-                if overflowed {
-                    eprintln!("warning: {:?} overflowed", register);
+            Instruction::Add(register, value) => match register {
+                Register::UintRegister(register) => {
+                    let value = self.unwrap_uint_value(value);
+                    let (value, overflowed) =
+                        self.registers[register as usize].overflowing_add(value);
+                    if overflowed {
+                        eprintln!("warning: {:?} overflowed", register);
+                    }
+                    self.registers[register as usize] = value;
                 }
-                self.registers[register as usize] = value;
-            }
-            Instruction::Store(r1, value) => {
-                let r1 = r1.unwrap_uint_register();
-                let value = value.unwrap_or_else(|r2| self.registers[r2 as usize]);
-                self.registers[r1 as usize] = value;
-            }
-            Instruction::Increment(register) => {
-                let register = register.unwrap_uint_register();
-                let (value, overflowed) = self.registers[register as usize].overflowing_add(1);
-                if overflowed {
-                    eprintln!("warning: {:?} overflowed", register);
+                Register::FloatRegister(register) => {
+                    self.float_registers[register as usize] += self.unwrap_float_value(value);
                 }
-                self.registers[register as usize] = value;
-            }
-            Instruction::Decrement(register) => {
-                let register = register.unwrap_uint_register();
-                let (value, overflowed) = self.registers[register as usize].overflowing_sub(1);
-                if overflowed {
-                    eprintln!("warning: {:?} overflowed", register);
+            },
+            Instruction::Store(r1, value) => match r1 {
+                Register::UintRegister(r1) => {
+                    self.registers[r1 as usize] = self.unwrap_uint_value(value);
                 }
-                self.registers[register as usize] = value;
-            }
-            Instruction::JumpIfNonZero(register, addr) => {
-                let register = register.unwrap_uint_register();
-                if self.registers[register as usize] != 0 {
-                    self.pc = addr as usize;
-                    return None;
+                Register::FloatRegister(r1) => {
+                    self.float_registers[r1 as usize] = self.unwrap_float_value(value);
                 }
-            }
-            Instruction::JumpIfGreaterThan(register, value, addr) => {
-                let register = register.unwrap_uint_register();
-                let value = value.unwrap_or_else(|_| todo!());
-                if self.registers[register as usize] > value {
-                    self.pc = addr as usize;
-                    return None;
+            },
+            Instruction::Increment(register) => match register {
+                Register::UintRegister(register) => {
+                    let (value, overflowed) = self.registers[register as usize].overflowing_add(1);
+                    if overflowed {
+                        eprintln!("warning: {:?} overflowed", register);
+                    }
+                    self.registers[register as usize] = value;
                 }
-            }
-            Instruction::Multiply(r1, r2, value) => {
-                let r1 = r1.unwrap_uint_register();
-                let r2 = r2.unwrap_uint_register();
-                let value = value.unwrap_or_else(|_| todo!());
-                let (value, overflowed) = self.registers[r2 as usize].overflowing_mul(value);
-                if overflowed {
-                    eprintln!("warning: {:?} overflowed", r2);
+                Register::FloatRegister(register) => {
+                    self.float_registers[register as usize] += 1.0;
                 }
-                self.registers[r1 as usize] = value;
-            }
+            },
+            Instruction::Decrement(register) => match register {
+                Register::UintRegister(register) => {
+                    let (value, overflowed) = self.registers[register as usize].overflowing_sub(1);
+                    if overflowed {
+                        eprintln!("warning: {:?} overflowed", register);
+                    }
+                    self.registers[register as usize] = value;
+                }
+                Register::FloatRegister(register) => {
+                    self.float_registers[register as usize] -= 1.0;
+                }
+            },
+            Instruction::JumpIfNonZero(register, addr) => match register {
+                Register::UintRegister(register) => {
+                    if self.registers[register as usize] != 0 {
+                        self.pc = addr as usize;
+                        return None;
+                    }
+                }
+                Register::FloatRegister(register) => {
+                    if self.float_registers[register as usize] != 0.0 {
+                        self.pc = addr as usize;
+                        return None;
+                    }
+                }
+            },
+            Instruction::JumpIfGreaterThan(register, value, addr) => match register {
+                Register::UintRegister(register) => {
+                    let value = self.unwrap_uint_value(value);
+                    if self.registers[register as usize] > value {
+                        self.pc = addr as usize;
+                        return None;
+                    }
+                }
+                Register::FloatRegister(register) => {
+                    let value = self.unwrap_float_value(value);
+                    if self.float_registers[register as usize] > value {
+                        self.pc = addr as usize;
+                        return None;
+                    }
+                }
+            },
+            Instruction::Multiply(r1, r2, value) => match r1 {
+                Register::UintRegister(r1) => {
+                    let value = value.unwrap_or_else(|_| todo!());
+                    let (value, overflowed) = self.register_as_u16(r2).overflowing_mul(value);
+                    if overflowed {
+                        eprintln!("warning: {:?} overflowed", r2);
+                    }
+                    self.registers[r1 as usize] = value;
+                }
+                Register::FloatRegister(_r1) => {
+                    todo!()
+                }
+            },
         }
 
         self.pc += 1;
         pixel
+    }
+
+    fn unwrap_uint_value(&self, value: Value) -> u16 {
+        match value {
+            Value::Uint(v) => v,
+            Value::Float(v) => v as u16,
+            Value::Register(r) => match r {
+                Register::UintRegister(r) => self.registers[r as usize],
+                Register::FloatRegister(r) => self.float_registers[r as usize] as u16,
+            },
+        }
+    }
+
+    fn unwrap_float_value(&self, value: Value) -> f64 {
+        match value {
+            Value::Uint(v) => v as f64,
+            Value::Float(v) => v,
+            Value::Register(r) => self.register_as_f64(r),
+        }
+    }
+
+    fn register_as_u16(&self, register: Register) -> u16 {
+        match register {
+            Register::UintRegister(r) => self.registers[r as usize],
+            Register::FloatRegister(r) => self.float_registers[r as usize] as u16,
+        }
+    }
+
+    fn register_as_f64(&self, register: Register) -> f64 {
+        match register {
+            Register::UintRegister(r) => self.registers[r as usize] as f64,
+            Register::FloatRegister(r) => self.float_registers[r as usize],
+        }
     }
 
     pub fn is_terminated(&self) -> bool {
