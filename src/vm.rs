@@ -1,5 +1,4 @@
 use std::convert::TryFrom;
-use std::f64::consts::PI;
 
 use crate::Opcode;
 
@@ -197,10 +196,7 @@ impl<'a> Vm<'a> {
             }
             Instruction::Move => {
                 let angle = (self.uint_registers[UintRegister::A as usize] % 360) as f64;
-
-                // Convert to radians
-                let radians = angle * (PI / 180.0);
-
+                let radians = angle.to_radians();
                 self.float_registers[FloatRegister::X as usize] += radians.cos();
                 self.float_registers[FloatRegister::Y as usize] += radians.sin();
             }
