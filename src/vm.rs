@@ -278,19 +278,31 @@ impl<'a> Vm<'a> {
                 }
             },
             Instruction::JumpIfNonZero(register, addr) => {
-                if self.check_conditional(register, Value::Uint(0), |a, b| a != b) {
+                if self.check_conditional(
+                    register,
+                    Value::Uint(0),
+                    |a: f64, b: f64| (a - b).abs() > f64::EPSILON, // a != b
+                ) {
                     self.pc = addr as usize;
                     return None;
                 }
             }
             Instruction::JumpIfEqual(register, value, addr) => {
-                if self.check_conditional(register, value, |a, b| a == b) {
+                if self.check_conditional(
+                    register,
+                    value,
+                    |a, b| (a - b).abs() < f64::EPSILON, // a == b
+                ) {
                     self.pc = addr as usize;
                     return None;
                 }
             }
             Instruction::JumpIfNotEqual(register, value, addr) => {
-                if self.check_conditional(register, value, |a, b| a != b) {
+                if self.check_conditional(
+                    register,
+                    value,
+                    |a, b| (a - b).abs() > f64::EPSILON, // a != b
+                ) {
                     self.pc = addr as usize;
                     return None;
                 }
