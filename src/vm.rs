@@ -277,84 +277,36 @@ impl<'a> Vm<'a> {
                     self.float_registers[register as usize] -= 1.0;
                 }
             },
-            Instruction::JumpIfNonZero(register, addr) => match register {
-                Register::UintRegister(register) => {
-                    if self.uint_registers[register as usize] != 0 {
-                        self.pc = addr as usize;
-                        return None;
-                    }
+            Instruction::JumpIfNonZero(register, addr) => {
+                if self.check_conditional(register, Value::Uint(0), |a, b| a != b) {
+                    self.pc = addr as usize;
+                    return None;
                 }
-                Register::FloatRegister(register) => {
-                    if self.float_registers[register as usize] != 0.0 {
-                        self.pc = addr as usize;
-                        return None;
-                    }
+            }
+            Instruction::JumpIfEqual(register, value, addr) => {
+                if self.check_conditional(register, value, |a, b| a == b) {
+                    self.pc = addr as usize;
+                    return None;
                 }
-            },
-            Instruction::JumpIfEqual(register, value, addr) => match register {
-                Register::UintRegister(register) => {
-                    let value = self.unwrap_uint_value(value);
-                    if self.uint_registers[register as usize] == value {
-                        self.pc = addr as usize;
-                        return None;
-                    }
+            }
+            Instruction::JumpIfNotEqual(register, value, addr) => {
+                if self.check_conditional(register, value, |a, b| a != b) {
+                    self.pc = addr as usize;
+                    return None;
                 }
-                Register::FloatRegister(register) => {
-                    let value = self.unwrap_float_value(value);
-                    if self.float_registers[register as usize] == value {
-                        self.pc = addr as usize;
-                        return None;
-                    }
+            }
+            Instruction::JumpIfGreaterThan(register, value, addr) => {
+                if self.check_conditional(register, value, |a, b| a > b) {
+                    self.pc = addr as usize;
+                    return None;
                 }
-            },
-            Instruction::JumpIfNotEqual(register, value, addr) => match register {
-                Register::UintRegister(register) => {
-                    let value = self.unwrap_uint_value(value);
-                    if self.uint_registers[register as usize] != value {
-                        self.pc = addr as usize;
-                        return None;
-                    }
+            }
+            Instruction::JumpIfLessThan(register, value, addr) => {
+                if self.check_conditional(register, value, |a, b| a < b) {
+                    self.pc = addr as usize;
+                    return None;
                 }
-                Register::FloatRegister(register) => {
-                    let value = self.unwrap_float_value(value);
-                    if self.float_registers[register as usize] != value {
-                        self.pc = addr as usize;
-                        return None;
-                    }
-                }
-            },
-            Instruction::JumpIfGreaterThan(register, value, addr) => match register {
-                Register::UintRegister(register) => {
-                    let value = self.unwrap_uint_value(value);
-                    if self.uint_registers[register as usize] > value {
-                        self.pc = addr as usize;
-                        return None;
-                    }
-                }
-                Register::FloatRegister(register) => {
-                    let value = self.unwrap_float_value(value);
-                    if self.float_registers[register as usize] > value {
-                        self.pc = addr as usize;
-                        return None;
-                    }
-                }
-            },
-            Instruction::JumpIfLessThan(register, value, addr) => match register {
-                Register::UintRegister(register) => {
-                    let value = self.unwrap_uint_value(value);
-                    if self.uint_registers[register as usize] < value {
-                        self.pc = addr as usize;
-                        return None;
-                    }
-                }
-                Register::FloatRegister(register) => {
-                    let value = self.unwrap_float_value(value);
-                    if self.float_registers[register as usize] < value {
-                        self.pc = addr as usize;
-                        return None;
-                    }
-                }
-            },
+            }
             Instruction::Multiply(register, value) => match register {
                 Register::UintRegister(register) => {
                     let value = self.unwrap_uint_value(value);
@@ -374,6 +326,24 @@ impl<'a> Vm<'a> {
 
         self.pc += 1;
         pixel
+    }
+
+    fn check_conditional<F>(&self, register: Register, value: Value, f: F) -> bool
+    where
+        F: Fn(f64, f64) -> bool,
+    {
+        match register {
+            Register::UintRegister(r) => {
+                let value = self.unwrap_uint_value(value);
+                // NOTE: Not ideal to be converting u16 to f64 before we run the predicate function
+                // but otherwise we can't re-use the same function.
+                f(self.uint_registers[r as usize] as f64, value as f64)
+            }
+            Register::FloatRegister(r) => {
+                let value = self.unwrap_float_value(value);
+                f(self.float_registers[r as usize], value)
+            }
+        }
     }
 
     fn unwrap_uint_value(&self, value: Value) -> u16 {
