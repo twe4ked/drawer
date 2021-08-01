@@ -160,8 +160,6 @@ impl Instruction {
 pub struct Vm<'a> {
     pc: usize,
     draw: bool,
-    x: f64,
-    y: f64,
     program: &'a [Instruction],
     terminated: bool,
     uint_registers: [u16; 8],
@@ -173,8 +171,6 @@ impl<'a> Vm<'a> {
         Vm {
             pc: 0,
             draw: false,
-            x: 0.0,
-            y: 0.0,
             program,
             terminated: false,
             uint_registers: Default::default(),
@@ -195,11 +191,15 @@ impl<'a> Vm<'a> {
                 // Convert to radians
                 let radians = angle * (PI / 180.0);
 
-                self.x += radians.cos();
-                self.y += radians.sin();
+                self.float_registers[FloatRegister::X as usize] += radians.cos();
+                self.float_registers[FloatRegister::Y as usize] += radians.sin();
 
                 if self.draw {
-                    pixel = Some((self.x as isize, self.y as isize, 0xffffff));
+                    pixel = Some((
+                        self.float_registers[FloatRegister::X as usize] as isize,
+                        self.float_registers[FloatRegister::Y as usize] as isize,
+                        0xffffff,
+                    ));
                 }
             }
             Instruction::Halt => self.terminated = true,
