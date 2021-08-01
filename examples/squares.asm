@@ -14,9 +14,9 @@ main_loop:
 			DEC E
 			JNZ E move_loop:
 
-		; Multiply the main loop count by 91 and store in D, then add D to A
-		MUL D C 91
-		STO A D
+		; Store the main loop count in A then multiply by 91
+		STO A C
+		MUL A 91
 
 	continue:
 

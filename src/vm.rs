@@ -88,12 +88,12 @@ pub enum Instruction {
     Halt,
     /// Move in direction of the current angle stored in register A
     Move,
-    /// Set the register `Rx` to the product of `Ry` and the immediate value `n`.
+    /// Set the register `Rx` to the product of `Rx` and the immediate value `n`.
     ///
     /// ```text
-    /// STO Rx Ry n
+    /// STO Rx n
     /// ```
-    Multiply(Register, Register, Value),
+    Multiply(Register, Value),
     /// Increment the register by an amount
     Add(Register, Value),
     /// Set the register `Rx` to either the immediate value `n`, or the value in the register `Ry`.
@@ -179,9 +179,8 @@ impl Instruction {
             Opcode::HLT => Instruction::Halt,
             Opcode::MUL => Instruction::Multiply(
                 p.register(),
-                p.register(),
                 if high_bit_set {
-                    todo!("MUL Rx Ry Rz")
+                    todo!("MUL Rx Ry")
                 } else {
                     Value::Uint(p.read_u16())
                 },
@@ -314,14 +313,15 @@ impl<'a> Vm<'a> {
                     }
                 }
             },
-            Instruction::Multiply(r1, r2, value) => match r1 {
-                Register::UintRegister(r1) => {
+            Instruction::Multiply(register, value) => match register {
+                Register::UintRegister(register) => {
                     let value = value.unwrap_or_else(|_| todo!());
-                    let (value, overflowed) = self.register_as_u16(r2).overflowing_mul(value);
+                    let (value, overflowed) =
+                        self.registers[register as usize].overflowing_mul(value);
                     if overflowed {
-                        eprintln!("warning: {:?} overflowed", r2);
+                        eprintln!("warning: {:?} overflowed", register);
                     }
-                    self.registers[r1 as usize] = value;
+                    self.registers[register as usize] = value;
                 }
                 Register::FloatRegister(_r1) => {
                     todo!()
@@ -348,21 +348,10 @@ impl<'a> Vm<'a> {
         match value {
             Value::Uint(v) => v as f64,
             Value::Float(v) => v,
-            Value::Register(r) => self.register_as_f64(r),
-        }
-    }
-
-    fn register_as_u16(&self, register: Register) -> u16 {
-        match register {
-            Register::UintRegister(r) => self.registers[r as usize],
-            Register::FloatRegister(r) => self.float_registers[r as usize] as u16,
-        }
-    }
-
-    fn register_as_f64(&self, register: Register) -> f64 {
-        match register {
-            Register::UintRegister(r) => self.registers[r as usize] as f64,
-            Register::FloatRegister(r) => self.float_registers[r as usize],
+            Value::Register(r) => match r {
+                Register::UintRegister(r) => self.registers[r as usize] as f64,
+                Register::FloatRegister(r) => self.float_registers[r as usize],
+            },
         }
     }
 

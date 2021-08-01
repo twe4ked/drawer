@@ -15,10 +15,9 @@ mark_1:
     MOV
     JNZ C mark_2:
 
-  # Multiply the current value
-  MUL B D 15
-  # And then increment the ..
-  STO A B
+  # Set the A register to by D * 15
+  STO A D
+  MUL A 15
 
   # Increment our loop
   INC D

@@ -137,8 +137,6 @@ fn main() {
                     out.push(Opcode::MUL as u8);
                     let register = parse_register(parts.next());
                     out.push(register);
-                    let register = parse_register(parts.next());
-                    out.push(register);
                     let value = parse_u16(parts.next());
                     out.extend_from_slice(&value.to_le_bytes());
                     instruction_count += 1;
