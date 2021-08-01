@@ -191,8 +191,6 @@ impl<'a> Vm<'a> {
     }
 
     pub fn step(&mut self) -> Option<(isize, isize, u32)> {
-        let mut pixel = None;
-
         match self.program[self.pc] {
             Instruction::Draw => {
                 self.draw = !self.draw;
@@ -205,14 +203,6 @@ impl<'a> Vm<'a> {
 
                 self.float_registers[FloatRegister::X as usize] += radians.cos();
                 self.float_registers[FloatRegister::Y as usize] += radians.sin();
-
-                if self.draw {
-                    pixel = Some((
-                        self.float_registers[FloatRegister::X as usize] as isize,
-                        self.float_registers[FloatRegister::Y as usize] as isize,
-                        0xffffff,
-                    ));
-                }
             }
             Instruction::Halt => self.terminated = true,
             Instruction::Add(register, value) => match register {
@@ -337,7 +327,16 @@ impl<'a> Vm<'a> {
         }
 
         self.pc += 1;
-        pixel
+
+        if self.draw {
+            Some((
+                self.float_registers[FloatRegister::X as usize] as isize,
+                self.float_registers[FloatRegister::Y as usize] as isize,
+                0xffffff,
+            ))
+        } else {
+            None
+        }
     }
 
     fn check_conditional<F>(&self, register: Register, value: Value, f: F) -> bool
