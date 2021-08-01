@@ -289,8 +289,9 @@ impl<'a> Vm<'a> {
                     }
                     self.registers[register as usize] = value;
                 }
-                Register::FloatRegister(_r1) => {
-                    todo!()
+                Register::FloatRegister(register) => {
+                    let value = self.unwrap_float_value(value);
+                    self.float_registers[register as usize] *= value;
                 }
             },
         }
