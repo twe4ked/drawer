@@ -64,22 +64,6 @@ pub enum Value {
     Register(Register),
 }
 
-impl Value {
-    fn unwrap_or_else<F>(&self, f: F) -> u16
-    where
-        F: Fn(usize) -> u16,
-    {
-        match self {
-            Value::Uint(v) => *v,
-            Value::Register(r) => match r {
-                Register::UintRegister(r) => f(*r as usize),
-                _ => todo!("unhandled: {:?}", self),
-            },
-            _ => todo!("unhandled: {:?}", self),
-        }
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
     /// Toggle if we're drawing or not
@@ -170,7 +154,7 @@ impl Instruction {
             Opcode::JGT => Instruction::JumpIfGreaterThan(
                 p.register(),
                 if high_bit_set {
-                    todo!()
+                    Value::Register(p.register())
                 } else {
                     Value::Uint(p.read_u16())
                 },
@@ -180,7 +164,7 @@ impl Instruction {
             Opcode::MUL => Instruction::Multiply(
                 p.register(),
                 if high_bit_set {
-                    todo!("MUL Rx Ry")
+                    Value::Register(p.register())
                 } else {
                     Value::Uint(p.read_u16())
                 },
@@ -315,7 +299,7 @@ impl<'a> Vm<'a> {
             },
             Instruction::Multiply(register, value) => match register {
                 Register::UintRegister(register) => {
-                    let value = value.unwrap_or_else(|_| todo!());
+                    let value = self.unwrap_uint_value(value);
                     let (value, overflowed) =
                         self.registers[register as usize].overflowing_mul(value);
                     if overflowed {
