@@ -4,6 +4,7 @@ pub mod buffer;
 pub mod vm;
 
 #[repr(u8)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum Opcode {
     DRW = 0x01,
     MOV = 0x02,
