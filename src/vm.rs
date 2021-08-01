@@ -116,6 +116,14 @@ impl<'a> Program<'a> {
     fn register(&mut self) -> Register {
         Register::from_u8(self.read_u8())
     }
+
+    fn value(&mut self, is_register: bool) -> Value {
+        if is_register {
+            Value::Register(self.register())
+        } else {
+            Value::Uint(self.read_u16())
+        }
+    }
 }
 
 impl Instruction {
@@ -132,43 +140,16 @@ impl Instruction {
         let instruction = match opcode {
             Opcode::DRW => Instruction::Draw,
             Opcode::MOV => Instruction::Move,
-            Opcode::STO => Instruction::Store(
-                p.register(),
-                if high_bit_set {
-                    Value::Register(p.register())
-                } else {
-                    Value::Uint(p.read_u16())
-                },
-            ),
+            Opcode::STO => Instruction::Store(p.register(), p.value(high_bit_set)),
             Opcode::INC => Instruction::Increment(p.register()),
-            Opcode::ADD => Instruction::Add(
-                p.register(),
-                if high_bit_set {
-                    Value::Register(p.register())
-                } else {
-                    Value::Uint(p.read_u16())
-                },
-            ),
+            Opcode::ADD => Instruction::Add(p.register(), p.value(high_bit_set)),
             Opcode::DEC => Instruction::Decrement(p.register()),
             Opcode::JNZ => Instruction::JumpIfNonZero(p.register(), p.read_u16()),
-            Opcode::JGT => Instruction::JumpIfGreaterThan(
-                p.register(),
-                if high_bit_set {
-                    Value::Register(p.register())
-                } else {
-                    Value::Uint(p.read_u16())
-                },
-                p.read_u16(),
-            ),
+            Opcode::JGT => {
+                Instruction::JumpIfGreaterThan(p.register(), p.value(high_bit_set), p.read_u16())
+            }
             Opcode::HLT => Instruction::Halt,
-            Opcode::MUL => Instruction::Multiply(
-                p.register(),
-                if high_bit_set {
-                    Value::Register(p.register())
-                } else {
-                    Value::Uint(p.read_u16())
-                },
-            ),
+            Opcode::MUL => Instruction::Multiply(p.register(), p.value(high_bit_set)),
         };
 
         (p.cursor, instruction)
