@@ -80,6 +80,8 @@ pub enum Instruction {
     Multiply(Register, Value),
     /// Increment the register by an amount
     Add(Register, Value),
+    /// Decrement the register by an amount
+    Sub(Register, Value),
     /// Set the register `Rx` to either the immediate value `n`, or the value in the register `Ry`.
     ///
     /// ```text
@@ -94,7 +96,13 @@ pub enum Instruction {
     /// Jump if register is non-zero
     JumpIfNonZero(Register, u16),
     /// TODO
+    JumpIfEqual(Register, Value, u16),
+    /// TODO
+    JumpIfNotEqual(Register, Value, u16),
+    /// TODO
     JumpIfGreaterThan(Register, Value, u16),
+    /// TODO
+    JumpIfLessThan(Register, Value, u16),
 }
 
 struct Program<'a> {
@@ -146,9 +154,13 @@ impl Instruction {
             STO => Store(p.register(), p.value(high_bit_set)),
             INC => Increment(p.register()),
             ADD => Add(p.register(), p.value(high_bit_set)),
+            SUB => Sub(p.register(), p.value(high_bit_set)),
             DEC => Decrement(p.register()),
             JNZ => JumpIfNonZero(p.register(), p.read_u16()),
+            JEQ => JumpIfEqual(p.register(), p.value(high_bit_set), p.read_u16()),
+            JNE => JumpIfNotEqual(p.register(), p.value(high_bit_set), p.read_u16()),
             JGT => JumpIfGreaterThan(p.register(), p.value(high_bit_set), p.read_u16()),
+            JLT => JumpIfLessThan(p.register(), p.value(high_bit_set), p.read_u16()),
             HLT => Halt,
             MUL => Multiply(p.register(), p.value(high_bit_set)),
         };
@@ -217,6 +229,20 @@ impl<'a> Vm<'a> {
                     self.float_registers[register as usize] += self.unwrap_float_value(value);
                 }
             },
+            Instruction::Sub(register, value) => match register {
+                Register::UintRegister(register) => {
+                    let value = self.unwrap_uint_value(value);
+                    let (value, overflowed) =
+                        self.uint_registers[register as usize].overflowing_sub(value);
+                    if overflowed {
+                        eprintln!("warning: {:?} overflowed", register);
+                    }
+                    self.uint_registers[register as usize] = value;
+                }
+                Register::FloatRegister(register) => {
+                    self.float_registers[register as usize] -= self.unwrap_float_value(value);
+                }
+            },
             Instruction::Store(r1, value) => match r1 {
                 Register::UintRegister(r1) => {
                     self.uint_registers[r1 as usize] = self.unwrap_uint_value(value);
@@ -265,6 +291,38 @@ impl<'a> Vm<'a> {
                     }
                 }
             },
+            Instruction::JumpIfEqual(register, value, addr) => match register {
+                Register::UintRegister(register) => {
+                    let value = self.unwrap_uint_value(value);
+                    if self.uint_registers[register as usize] == value {
+                        self.pc = addr as usize;
+                        return None;
+                    }
+                }
+                Register::FloatRegister(register) => {
+                    let value = self.unwrap_float_value(value);
+                    if self.float_registers[register as usize] == value {
+                        self.pc = addr as usize;
+                        return None;
+                    }
+                }
+            },
+            Instruction::JumpIfNotEqual(register, value, addr) => match register {
+                Register::UintRegister(register) => {
+                    let value = self.unwrap_uint_value(value);
+                    if self.uint_registers[register as usize] != value {
+                        self.pc = addr as usize;
+                        return None;
+                    }
+                }
+                Register::FloatRegister(register) => {
+                    let value = self.unwrap_float_value(value);
+                    if self.float_registers[register as usize] != value {
+                        self.pc = addr as usize;
+                        return None;
+                    }
+                }
+            },
             Instruction::JumpIfGreaterThan(register, value, addr) => match register {
                 Register::UintRegister(register) => {
                     let value = self.unwrap_uint_value(value);
@@ -276,6 +334,22 @@ impl<'a> Vm<'a> {
                 Register::FloatRegister(register) => {
                     let value = self.unwrap_float_value(value);
                     if self.float_registers[register as usize] > value {
+                        self.pc = addr as usize;
+                        return None;
+                    }
+                }
+            },
+            Instruction::JumpIfLessThan(register, value, addr) => match register {
+                Register::UintRegister(register) => {
+                    let value = self.unwrap_uint_value(value);
+                    if self.uint_registers[register as usize] < value {
+                        self.pc = addr as usize;
+                        return None;
+                    }
+                }
+                Register::FloatRegister(register) => {
+                    let value = self.unwrap_float_value(value);
+                    if self.float_registers[register as usize] < value {
                         self.pc = addr as usize;
                         return None;
                     }

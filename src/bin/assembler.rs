@@ -42,6 +42,36 @@ fn parse_u16(input: Option<&str>) -> u16 {
     input.expect("missing value").parse().expect("not a u16")
 }
 
+enum Value {
+    Register(u8),
+    Uint(u16),
+}
+
+fn parse_value(input: &str) -> Value {
+    if let Some(r) = try_parse_register(input) {
+        Value::Register(r)
+    } else {
+        let value = parse_u16(Some(input));
+        Value::Uint(value)
+    }
+}
+
+fn add_instruction(buffer: &mut Vec<u8>, opcode: Opcode, r1: u8, operand: Option<&str>) {
+    let operand = operand.expect("missing operand");
+    match parse_value(operand) {
+        Value::Register(r2) => {
+            buffer.push(opcode as u8 | 0x80);
+            buffer.push(r1);
+            buffer.push(r2);
+        }
+        Value::Uint(value) => {
+            buffer.push(opcode as u8);
+            buffer.push(r1);
+            buffer.extend_from_slice(&value.to_le_bytes());
+        }
+    }
+}
+
 fn main() {
     let mut instruction_count = 0;
     let mut out = Vec::new();
@@ -55,9 +85,8 @@ fn main() {
 
         if let Some(prefix) = parts.next() {
             match prefix {
-                "DRW" | "MOV" | "STO" | "INC" | "DEC" | "JNZ" | "JGT" | "MUL" | "ADD" | "HLT" => {
-                    instruction_count += 1
-                }
+                "DRW" | "MOV" | "STO" | "INC" | "ADD" | "DEC" | "JNZ" | "HLT" | "MUL" | "JGT"
+                | "SUB" | "JEQ" | "JNE" | "JLT" => instruction_count += 1,
                 _ => {
                     if prefix.ends_with(':') {
                         if labels.contains_key(prefix) {
@@ -85,17 +114,7 @@ fn main() {
                 }
                 "STO" => {
                     let r1 = parse_register(parts.next());
-                    let operand_2 = parts.next().expect("missing operand 2");
-                    if let Some(r2) = try_parse_register(operand_2) {
-                        out.push(Opcode::STO as u8 | 0x80);
-                        out.push(r1);
-                        out.push(r2);
-                    } else {
-                        out.push(Opcode::STO as u8);
-                        out.push(r1);
-                        let value = parse_u16(Some(operand_2));
-                        out.extend_from_slice(&value.to_le_bytes());
-                    }
+                    add_instruction(&mut out, Opcode::STO, r1, parts.next())
                 }
                 "INC" => {
                     out.push(Opcode::INC as u8);
@@ -116,22 +135,36 @@ fn main() {
                     out.extend_from_slice(&addr.to_le_bytes());
                 }
                 "JGT" => {
-                    out.push(Opcode::JGT as u8);
                     let register = parse_register(parts.next());
-                    out.push(register);
-                    // TODO: Support register as second operand
-                    let value = parse_u16(parts.next());
-                    out.extend_from_slice(&value.to_le_bytes());
+                    add_instruction(&mut out, Opcode::JGT, register, parts.next());
+                    let label = parts.next().expect("missing label");
+                    let addr = labels.get(label).expect("label not found");
+                    out.extend_from_slice(&addr.to_le_bytes());
+                }
+                "JLT" => {
+                    let register = parse_register(parts.next());
+                    add_instruction(&mut out, Opcode::JLT, register, parts.next());
+                    let label = parts.next().expect("missing label");
+                    let addr = labels.get(label).expect("label not found");
+                    out.extend_from_slice(&addr.to_le_bytes());
+                }
+                "JEQ" => {
+                    let register = parse_register(parts.next());
+                    add_instruction(&mut out, Opcode::JEQ, register, parts.next());
+                    let label = parts.next().expect("missing label");
+                    let addr = labels.get(label).expect("label not found");
+                    out.extend_from_slice(&addr.to_le_bytes());
+                }
+                "JNE" => {
+                    let register = parse_register(parts.next());
+                    add_instruction(&mut out, Opcode::JNE, register, parts.next());
                     let label = parts.next().expect("missing label");
                     let addr = labels.get(label).expect("label not found");
                     out.extend_from_slice(&addr.to_le_bytes());
                 }
                 "MUL" => {
-                    out.push(Opcode::MUL as u8);
                     let register = parse_register(parts.next());
-                    out.push(register);
-                    let value = parse_u16(parts.next());
-                    out.extend_from_slice(&value.to_le_bytes());
+                    add_instruction(&mut out, Opcode::MUL, register, parts.next())
                 }
                 "ADD" => {
                     let r1 = parse_register(parts.next());
@@ -146,6 +179,10 @@ fn main() {
                         let value = parse_u16(Some(operand_2));
                         out.extend_from_slice(&value.to_le_bytes());
                     }
+                }
+                "SUB" => {
+                    let register = parse_register(parts.next());
+                    add_instruction(&mut out, Opcode::SUB, register, parts.next())
                 }
                 "HLT" => {
                     out.push(Opcode::HLT as u8);
