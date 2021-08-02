@@ -10,17 +10,21 @@ pub struct Vm {
 }
 
 impl Vm {
-    pub fn new(input: &[u8]) -> Self {
-        let program = crate::instruction::decode(&input);
+    pub fn new(input: &[u8]) -> (u16, u16, Self) {
+        let (width, height, program) = crate::instruction::decode(&input);
 
-        Vm {
-            pc: 0,
-            draw: false,
-            program,
-            terminated: false,
-            uint_registers: Default::default(),
-            float_registers: Default::default(),
-        }
+        (
+            width,
+            height,
+            Vm {
+                pc: 0,
+                draw: false,
+                program,
+                terminated: false,
+                uint_registers: Default::default(),
+                float_registers: Default::default(),
+            },
+        )
     }
 
     pub fn step(&mut self) -> Option<(isize, isize, u32)> {

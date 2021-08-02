@@ -7,16 +7,17 @@ use std::thread;
 use drawer::buffer::Buffer;
 use drawer::vm::Vm;
 
-const WIDTH: usize = 1024;
-const HEIGHT: usize = 1024;
-
 fn main() {
     let mut input = Vec::new();
     stdin().read_to_end(&mut input).unwrap();
 
+    let (width, height, mut vm) = Vm::new(&input);
+
+    let width = width as usize;
+    let height = height as usize;
+
     let (tx, rx) = channel();
     let worker = thread::spawn(move || {
-        let mut vm = Vm::new(&input);
         while !vm.is_terminated() {
             if let Some(pixel) = vm.step() {
                 tx.send(pixel).unwrap();
@@ -25,12 +26,12 @@ fn main() {
         eprintln!("worker finished");
     });
 
-    let mut buffer = Buffer::new(WIDTH, HEIGHT);
+    let mut buffer = Buffer::new(width, height);
 
     let mut window = Window::new(
         "Drawer",
-        WIDTH,
-        HEIGHT,
+        width,
+        height,
         WindowOptions {
             scale: Scale::X1,
             ..WindowOptions::default()
@@ -44,8 +45,8 @@ fn main() {
     while window.is_open() {
         for (x, y, color) in rx.try_iter() {
             // We want 0,0 to be in the center of the buffer
-            let x = (WIDTH as isize / 2) + x;
-            let y = (HEIGHT as isize / 2) + y;
+            let x = (width as isize / 2) + x;
+            let y = (height as isize / 2) + y;
 
             use std::convert::TryFrom;
 
@@ -65,7 +66,7 @@ fn main() {
         }
 
         window
-            .update_with_buffer(&buffer.buffer(), WIDTH, HEIGHT)
+            .update_with_buffer(&buffer.buffer(), width, height)
             .expect("unable to update buffer");
     }
 

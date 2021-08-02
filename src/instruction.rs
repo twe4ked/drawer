@@ -243,9 +243,13 @@ impl Instruction {
     }
 }
 
-pub fn decode(buffer: &[u8]) -> Vec<Instruction> {
+pub fn decode(buffer: &[u8]) -> (u16, u16, Vec<Instruction>) {
     let mut program = Vec::new();
-    let mut i = 0;
+
+    let width = u16::from_le_bytes([buffer[0], buffer[1]]);
+    let height = u16::from_le_bytes([buffer[2], buffer[3]]);
+
+    let mut i = 4;
     loop {
         if i >= buffer.len() {
             break;
@@ -256,5 +260,6 @@ pub fn decode(buffer: &[u8]) -> Vec<Instruction> {
 
         program.push(instruction);
     }
-    program
+
+    (width, height, program)
 }

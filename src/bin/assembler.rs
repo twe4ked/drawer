@@ -97,6 +97,12 @@ fn main() {
         }
     }
 
+    // Width
+    out.extend_from_slice(&1024u16.to_le_bytes());
+
+    // Height
+    out.extend_from_slice(&1024u16.to_le_bytes());
+
     for line in input.lines() {
         let mut parts = line.trim().split_whitespace();
 
