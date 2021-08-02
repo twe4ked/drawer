@@ -13,64 +13,68 @@ fn read_stdin() -> String {
     buffer
 }
 
-fn try_parse_register(input: &str) -> Option<u8> {
-    match input {
-        "A" => Some(0x0),
-        "B" => Some(0x1),
-        "C" => Some(0x2),
-        "D" => Some(0x3),
-        "E" => Some(0x4),
-        "F" => Some(0x5),
-        "G" => Some(0x6),
-        "H" => Some(0x7),
-        "S" => Some(0x8),
-        "T" => Some(0x9),
-        "U" => Some(0xa),
-        "V" => Some(0xb),
-        "W" => Some(0xc),
-        "X" => Some(0xd),
-        "Y" => Some(0xe),
-        "Z" => Some(0xf),
-        _ => None,
+fn parse_register(input: Option<&str>) -> Result<u8, String> {
+    if let Some(input) = input {
+        match input {
+            "A" => Ok(0x0),
+            "B" => Ok(0x1),
+            "C" => Ok(0x2),
+            "D" => Ok(0x3),
+            "E" => Ok(0x4),
+            "F" => Ok(0x5),
+            "G" => Ok(0x6),
+            "H" => Ok(0x7),
+            "S" => Ok(0x8),
+            "T" => Ok(0x9),
+            "U" => Ok(0xa),
+            "V" => Ok(0xb),
+            "W" => Ok(0xc),
+            "X" => Ok(0xd),
+            "Y" => Ok(0xe),
+            "Z" => Ok(0xf),
+            _ => Err(format!("not a register: {}", input)),
+        }
+    } else {
+        Err("missing register".to_string())
     }
-}
-
-fn parse_register(input: Option<&str>) -> u8 {
-    try_parse_register(input.expect("missing register")).expect("not a register")
 }
 
 fn parse_u16(input: Option<&str>) -> u16 {
     input.expect("missing value").parse().expect("not a u16")
 }
 
-enum Value {
-    Register(u8),
-    Uint(u16),
+fn add_instruction_0(buffer: &mut Vec<u8>, opcode: Opcode) {
+    buffer.push(opcode as u8);
 }
 
-fn parse_value(input: &str) -> Value {
-    if let Some(r) = try_parse_register(input) {
-        Value::Register(r)
+fn add_instruction_1(buffer: &mut Vec<u8>, opcode: Opcode, operand_1: Option<&str>) {
+    buffer.push(opcode as u8);
+    let register = parse_register(operand_1).unwrap();
+    buffer.push(register);
+}
+
+fn add_instruction_2(
+    buffer: &mut Vec<u8>,
+    opcode: Opcode,
+    operand_1: Option<&str>,
+    operand_2: Option<&str>,
+) {
+    let r1 = parse_register(operand_1).unwrap();
+    if let Ok(r2) = parse_register(operand_2) {
+        buffer.push(opcode as u8 | 0x80);
+        buffer.push(r1);
+        buffer.push(r2);
     } else {
-        let value = parse_u16(Some(input));
-        Value::Uint(value)
+        let value = parse_u16(operand_2);
+        buffer.push(opcode as u8);
+        buffer.push(r1);
+        buffer.extend_from_slice(&value.to_le_bytes());
     }
 }
 
-fn add_instruction(buffer: &mut Vec<u8>, opcode: Opcode, r1: u8, operand: Option<&str>) {
-    let operand = operand.expect("missing operand");
-    match parse_value(operand) {
-        Value::Register(r2) => {
-            buffer.push(opcode as u8 | 0x80);
-            buffer.push(r1);
-            buffer.push(r2);
-        }
-        Value::Uint(value) => {
-            buffer.push(opcode as u8);
-            buffer.push(r1);
-            buffer.extend_from_slice(&value.to_le_bytes());
-        }
-    }
+fn add_label(buffer: &mut Vec<u8>, labels: &Labels, label: Option<&str>) {
+    let addr = labels.get(label).unwrap();
+    buffer.extend_from_slice(&addr.to_le_bytes());
 }
 
 struct Labels<'a> {
@@ -157,86 +161,36 @@ fn main() {
             match prefix {
                 "#" | ";" => continue,
                 "WIDTH" | "HEIGHT" => continue,
-                "DRW" => {
-                    out.push(Opcode::DRW as u8);
-                }
-                "MOV" => {
-                    out.push(Opcode::MOV as u8);
-                }
-                "STO" => {
-                    let r1 = parse_register(parts.next());
-                    add_instruction(&mut out, Opcode::STO, r1, parts.next())
-                }
-                "INC" => {
-                    out.push(Opcode::INC as u8);
-                    let register = parse_register(parts.next());
-                    out.push(register);
-                }
-                "DEC" => {
-                    out.push(Opcode::DEC as u8);
-                    let register = parse_register(parts.next());
-                    out.push(register);
-                }
+                "DRW" => add_instruction_0(&mut out, Opcode::DRW),
+                "MOV" => add_instruction_0(&mut out, Opcode::MOV),
+                "STO" => add_instruction_2(&mut out, Opcode::STO, parts.next(), parts.next()),
+                "INC" => add_instruction_1(&mut out, Opcode::INC, parts.next()),
+                "DEC" => add_instruction_1(&mut out, Opcode::DEC, parts.next()),
                 "JNZ" => {
-                    out.push(Opcode::JNZ as u8);
-                    let register = parse_register(parts.next());
-                    out.push(register);
-                    let addr = labels.get(parts.next()).unwrap();
-                    out.extend_from_slice(&addr.to_le_bytes());
+                    add_instruction_1(&mut out, Opcode::JNZ, parts.next());
+                    add_label(&mut out, &labels, parts.next());
                 }
                 "JGT" => {
-                    let register = parse_register(parts.next());
-                    add_instruction(&mut out, Opcode::JGT, register, parts.next());
-                    let addr = labels.get(parts.next()).unwrap();
-                    out.extend_from_slice(&addr.to_le_bytes());
+                    add_instruction_2(&mut out, Opcode::JGT, parts.next(), parts.next());
+                    add_label(&mut out, &labels, parts.next());
                 }
                 "JLT" => {
-                    let register = parse_register(parts.next());
-                    add_instruction(&mut out, Opcode::JLT, register, parts.next());
-                    let addr = labels.get(parts.next()).unwrap();
-                    out.extend_from_slice(&addr.to_le_bytes());
+                    add_instruction_2(&mut out, Opcode::JLT, parts.next(), parts.next());
+                    add_label(&mut out, &labels, parts.next());
                 }
                 "JEQ" => {
-                    let register = parse_register(parts.next());
-                    add_instruction(&mut out, Opcode::JEQ, register, parts.next());
-                    let addr = labels.get(parts.next()).unwrap();
-                    out.extend_from_slice(&addr.to_le_bytes());
+                    add_instruction_2(&mut out, Opcode::JEQ, parts.next(), parts.next());
+                    add_label(&mut out, &labels, parts.next());
                 }
                 "JNE" => {
-                    let register = parse_register(parts.next());
-                    add_instruction(&mut out, Opcode::JNE, register, parts.next());
-                    let addr = labels.get(parts.next()).unwrap();
-                    out.extend_from_slice(&addr.to_le_bytes());
+                    add_instruction_2(&mut out, Opcode::JNE, parts.next(), parts.next());
+                    add_label(&mut out, &labels, parts.next());
                 }
-                "MUL" => {
-                    let register = parse_register(parts.next());
-                    add_instruction(&mut out, Opcode::MUL, register, parts.next())
-                }
-                "DIV" => {
-                    let register = parse_register(parts.next());
-                    add_instruction(&mut out, Opcode::DIV, register, parts.next())
-                }
-                "ADD" => {
-                    let r1 = parse_register(parts.next());
-                    let operand_2 = parts.next().expect("missing operand 2");
-                    if let Some(r2) = try_parse_register(operand_2) {
-                        out.push(Opcode::ADD as u8 | 0x80);
-                        out.push(r1);
-                        out.push(r2);
-                    } else {
-                        out.push(Opcode::ADD as u8);
-                        out.push(r1);
-                        let value = parse_u16(Some(operand_2));
-                        out.extend_from_slice(&value.to_le_bytes());
-                    }
-                }
-                "SUB" => {
-                    let register = parse_register(parts.next());
-                    add_instruction(&mut out, Opcode::SUB, register, parts.next())
-                }
-                "HLT" => {
-                    out.push(Opcode::HLT as u8);
-                }
+                "MUL" => add_instruction_2(&mut out, Opcode::MUL, parts.next(), parts.next()),
+                "DIV" => add_instruction_2(&mut out, Opcode::DIV, parts.next(), parts.next()),
+                "ADD" => add_instruction_2(&mut out, Opcode::ADD, parts.next(), parts.next()),
+                "SUB" => add_instruction_2(&mut out, Opcode::SUB, parts.next(), parts.next()),
+                "HLT" => add_instruction_0(&mut out, Opcode::HLT),
                 _ => {
                     if prefix.ends_with(':') {
                         // Labels are already processed, move on
