@@ -73,29 +73,50 @@ fn add_instruction(buffer: &mut Vec<u8>, opcode: Opcode, r1: u8, operand: Option
     }
 }
 
-fn main() {
-    let mut instruction_count = 0;
-    let mut out = Vec::new();
-    let mut labels = HashMap::<&str, u16>::new();
+struct Labels<'a> {
+    inner: HashMap<&'a str, u16>,
+}
 
-    let input = read_stdin();
+impl<'a> Labels<'a> {
+    fn new(input: &'a str) -> Self {
+        let mut labels = HashMap::new();
+        let mut instruction_count = 0;
 
-    // Find labels
-    for line in input.lines() {
-        let mut parts = line.trim().split_whitespace();
+        for line in input.lines() {
+            let mut parts = line.trim().split_whitespace();
 
-        if let Some(prefix) = parts.next() {
-            if let Ok(_) = Opcode::try_from(prefix) {
-                instruction_count += 1;
-            } else if prefix.ends_with(':') {
-                if labels.contains_key(prefix) {
-                    panic!("re-used label: {}", prefix);
-                } else {
-                    labels.insert(prefix, instruction_count);
+            if let Some(prefix) = parts.next() {
+                if let Ok(_) = Opcode::try_from(prefix) {
+                    instruction_count += 1;
+                } else if prefix.ends_with(':') {
+                    if labels.contains_key(prefix) {
+                        panic!("re-used label: {}", prefix);
+                    } else {
+                        labels.insert(prefix, instruction_count);
+                    }
                 }
             }
         }
+
+        Labels { inner: labels }
     }
+
+    fn get(&self, label: Option<&str>) -> Result<u16, String> {
+        if let Some(label) = label {
+            self.inner
+                .get(label)
+                .ok_or_else(|| format!("label not found {}", label))
+                .map(|n| *n)
+        } else {
+            Err("missing label".to_string())
+        }
+    }
+}
+
+fn main() {
+    let input = read_stdin();
+
+    let labels = Labels::new(&input);
 
     // Find width and height
     let mut width = None;
@@ -120,6 +141,8 @@ fn main() {
             }
         }
     }
+
+    let mut out = Vec::new();
 
     // Width
     out.extend_from_slice(&width.expect("missing width").to_le_bytes());
@@ -158,36 +181,31 @@ fn main() {
                     out.push(Opcode::JNZ as u8);
                     let register = parse_register(parts.next());
                     out.push(register);
-                    let label = parts.next().expect("missing label");
-                    let addr = labels.get(label).expect("label not found");
+                    let addr = labels.get(parts.next()).unwrap();
                     out.extend_from_slice(&addr.to_le_bytes());
                 }
                 "JGT" => {
                     let register = parse_register(parts.next());
                     add_instruction(&mut out, Opcode::JGT, register, parts.next());
-                    let label = parts.next().expect("missing label");
-                    let addr = labels.get(label).expect("label not found");
+                    let addr = labels.get(parts.next()).unwrap();
                     out.extend_from_slice(&addr.to_le_bytes());
                 }
                 "JLT" => {
                     let register = parse_register(parts.next());
                     add_instruction(&mut out, Opcode::JLT, register, parts.next());
-                    let label = parts.next().expect("missing label");
-                    let addr = labels.get(label).expect("label not found");
+                    let addr = labels.get(parts.next()).unwrap();
                     out.extend_from_slice(&addr.to_le_bytes());
                 }
                 "JEQ" => {
                     let register = parse_register(parts.next());
                     add_instruction(&mut out, Opcode::JEQ, register, parts.next());
-                    let label = parts.next().expect("missing label");
-                    let addr = labels.get(label).expect("label not found");
+                    let addr = labels.get(parts.next()).unwrap();
                     out.extend_from_slice(&addr.to_le_bytes());
                 }
                 "JNE" => {
                     let register = parse_register(parts.next());
                     add_instruction(&mut out, Opcode::JNE, register, parts.next());
-                    let label = parts.next().expect("missing label");
-                    let addr = labels.get(label).expect("label not found");
+                    let addr = labels.get(parts.next()).unwrap();
                     out.extend_from_slice(&addr.to_le_bytes());
                 }
                 "MUL" => {
