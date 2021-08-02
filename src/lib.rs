@@ -34,3 +34,27 @@ impl TryFrom<u8> for Opcode {
         }
     }
 }
+
+impl TryFrom<&str> for Opcode {
+    type Error = ();
+
+    fn try_from(input: &str) -> Result<Self, Self::Error> {
+        match input {
+            "DRW" => Ok(Opcode::DRW),
+            "MOV" => Ok(Opcode::MOV),
+            "STO" => Ok(Opcode::STO),
+            "INC" => Ok(Opcode::INC),
+            "ADD" => Ok(Opcode::ADD),
+            "DEC" => Ok(Opcode::DEC),
+            "JNZ" => Ok(Opcode::JNZ),
+            "HLT" => Ok(Opcode::HLT),
+            "MUL" => Ok(Opcode::MUL),
+            "JGT" => Ok(Opcode::JGT),
+            "SUB" => Ok(Opcode::SUB),
+            "JEQ" => Ok(Opcode::JEQ),
+            "JNE" => Ok(Opcode::JNE),
+            "JLT" => Ok(Opcode::JLT),
+            _ => Err(()),
+        }
+    }
+}

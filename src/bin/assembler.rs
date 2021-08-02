@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{stdin, Read, Write};
 
@@ -84,17 +85,13 @@ fn main() {
         let mut parts = line.trim().split_whitespace();
 
         if let Some(prefix) = parts.next() {
-            match prefix {
-                "DRW" | "MOV" | "STO" | "INC" | "ADD" | "DEC" | "JNZ" | "HLT" | "MUL" | "JGT"
-                | "SUB" | "JEQ" | "JNE" | "JLT" => instruction_count += 1,
-                _ => {
-                    if prefix.ends_with(':') {
-                        if labels.contains_key(prefix) {
-                            panic!("re-used label: {}", prefix);
-                        } else {
-                            labels.insert(prefix, instruction_count);
-                        }
-                    }
+            if let Ok(_) = Opcode::try_from(prefix) {
+                instruction_count += 1;
+            } else if prefix.ends_with(':') {
+                if labels.contains_key(prefix) {
+                    panic!("re-used label: {}", prefix);
+                } else {
+                    labels.insert(prefix, instruction_count);
                 }
             }
         }
