@@ -1,40 +1,18 @@
 use minifb::{Scale, Window, WindowOptions};
+
+use std::io::{stdin, Read};
 use std::sync::mpsc::channel;
 use std::thread;
 
 use drawer::buffer::Buffer;
-use drawer::instruction::Instruction;
 use drawer::vm::Vm;
 
 const WIDTH: usize = 1024;
 const HEIGHT: usize = 1024;
 
-fn read_stdin() -> Vec<u8> {
-    use std::io::{stdin, Read};
-    let mut buffer = Vec::new();
-    stdin().read_to_end(&mut buffer).unwrap();
-    buffer
-}
-
-fn decode(buffer: &[u8]) -> Vec<Instruction> {
-    let mut program = Vec::new();
-    let mut i = 0;
-    loop {
-        if i >= buffer.len() {
-            break;
-        }
-
-        let (bytes, instruction) = Instruction::parse_next(&buffer[i..]);
-        i += bytes;
-
-        program.push(instruction);
-    }
-    program
-}
-
 fn main() {
-    let input = read_stdin();
-    let program = decode(&input);
+    let mut input = Vec::new();
+    stdin().read_to_end(&mut input).unwrap();
 
     let mut window = Window::new(
         "Drawer",
@@ -52,7 +30,7 @@ fn main() {
 
     let (tx, rx) = channel();
     let worker = thread::spawn(move || {
-        let mut vm = Vm::new(&program);
+        let mut vm = Vm::new(&input);
         while !vm.is_terminated() {
             if let Some((x, y, color)) = vm.step() {
                 tx.send((x, y, color)).unwrap();

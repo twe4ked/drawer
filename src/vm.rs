@@ -1,16 +1,18 @@
 use crate::instruction::{FloatRegister, Instruction, Register, UintRegister, Value};
 
-pub struct Vm<'a> {
+pub struct Vm {
     pc: usize,
     draw: bool,
-    program: &'a [Instruction],
+    program: Vec<Instruction>,
     terminated: bool,
     uint_registers: [u16; 8],
     float_registers: [f64; 8],
 }
 
-impl<'a> Vm<'a> {
-    pub fn new(program: &'a [Instruction]) -> Self {
+impl Vm {
+    pub fn new(input: &[u8]) -> Self {
+        let program = crate::instruction::decode(&input);
+
         Vm {
             pc: 0,
             draw: false,

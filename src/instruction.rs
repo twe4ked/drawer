@@ -242,3 +242,19 @@ impl Instruction {
         (p.cursor, instruction)
     }
 }
+
+pub fn decode(buffer: &[u8]) -> Vec<Instruction> {
+    let mut program = Vec::new();
+    let mut i = 0;
+    loop {
+        if i >= buffer.len() {
+            break;
+        }
+
+        let (bytes, instruction) = Instruction::parse_next(&buffer[i..]);
+        i += bytes;
+
+        program.push(instruction);
+    }
+    program
+}
