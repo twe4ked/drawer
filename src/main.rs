@@ -3,7 +3,8 @@ use std::sync::mpsc::channel;
 use std::thread;
 
 use drawer::buffer::Buffer;
-use drawer::vm::{Instruction, Vm};
+use drawer::instruction::Instruction;
+use drawer::vm::Vm;
 
 const WIDTH: usize = 1024;
 const HEIGHT: usize = 1024;

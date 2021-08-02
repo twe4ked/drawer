@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 
 pub mod buffer;
+pub mod instruction;
 pub mod vm;
 
 #[repr(u8)]
