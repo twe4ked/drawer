@@ -14,6 +14,19 @@ fn main() {
     let mut input = Vec::new();
     stdin().read_to_end(&mut input).unwrap();
 
+    let (tx, rx) = channel();
+    let worker = thread::spawn(move || {
+        let mut vm = Vm::new(&input);
+        while !vm.is_terminated() {
+            if let Some(pixel) = vm.step() {
+                tx.send(pixel).unwrap();
+            }
+        }
+        eprintln!("worker finished");
+    });
+
+    let mut buffer = Buffer::new(WIDTH, HEIGHT);
+
     let mut window = Window::new(
         "Drawer",
         WIDTH,
@@ -27,20 +40,6 @@ fn main() {
 
     // Limit to max ~60 fps update rate
     window.limit_update_rate(Some(std::time::Duration::from_micros(16600)));
-
-    let (tx, rx) = channel();
-    let worker = thread::spawn(move || {
-        let mut vm = Vm::new(&input);
-        while !vm.is_terminated() {
-            if let Some((x, y, color)) = vm.step() {
-                tx.send((x, y, color)).unwrap();
-            }
-        }
-
-        eprintln!("worker finished");
-    });
-
-    let mut buffer = Buffer::new(WIDTH, HEIGHT);
 
     while window.is_open() {
         for (x, y, color) in rx.try_iter() {
