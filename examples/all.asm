@@ -1,5 +1,3 @@
-; NOTE: All of these instructions won't run because of the jumping.
-
 WIDTH 1024
 HEIGHT 1024
 
@@ -40,30 +38,67 @@ INC S
 DEC A
 DEC S
 
-label:
+STO A 1
+STO S 0
 
 ; JNZ Rx label:
-JNZ A label:
-JNZ S label:
+JNZ A l1:
+JNZ S l2:
+
+l1:
+		STO A 0
+
+l2:
+
+STO A 1
+STO S 0
+
+l3:
+		STO A 0
 
 ; JEQ Rx n label:
 ; JEQ Rx Ry label:
-JEQ A 1 label:
-JEQ S A label:
+JEQ A 1 l3:
+JEQ S A l4:
+
+l4:
+
+STO A 1
+STO S 1
+
+l5:
+		STO A 0
 
 ; JNE Rx n label:
 ; JNE Rx Ry label:
-JNE A 1 label:
-JNE S A label:
+JNE A 0 l5:
+JNE S A l6:
+
+l6:
+
+STO A 1
+STO S 1
+
+l7:
+		STO A 0
 
 ; JGT Rx n label:
 ; JGT Rx Ry label:
-JGT A 1 label:
-JGT S A label:
+JGT A 0 l7:
+JGT S A l8:
+
+l8:
+
+STO A 2
+STO S 1
+
+l9:
+		STO A 1
 
 ; JLT Rx n label:
 ; JLT Rx Ry label:
-JLT A 1 label:
-JLT S A label:
+JLT A 1 l9:
+JLT S A l10:
 
-HLT
+l10:
+		HLT
