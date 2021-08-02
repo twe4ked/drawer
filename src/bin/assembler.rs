@@ -163,9 +163,14 @@ fn main() {
                 "WIDTH" | "HEIGHT" => continue,
                 "DRW" => add_instruction_0(&mut out, Opcode::DRW),
                 "MOV" => add_instruction_0(&mut out, Opcode::MOV),
-                "STO" => add_instruction_2(&mut out, Opcode::STO, parts.next(), parts.next()),
+                "HLT" => add_instruction_0(&mut out, Opcode::HLT),
                 "INC" => add_instruction_1(&mut out, Opcode::INC, parts.next()),
                 "DEC" => add_instruction_1(&mut out, Opcode::DEC, parts.next()),
+                "STO" => add_instruction_2(&mut out, Opcode::STO, parts.next(), parts.next()),
+                "MUL" => add_instruction_2(&mut out, Opcode::MUL, parts.next(), parts.next()),
+                "DIV" => add_instruction_2(&mut out, Opcode::DIV, parts.next(), parts.next()),
+                "ADD" => add_instruction_2(&mut out, Opcode::ADD, parts.next(), parts.next()),
+                "SUB" => add_instruction_2(&mut out, Opcode::SUB, parts.next(), parts.next()),
                 "JNZ" => {
                     add_instruction_1(&mut out, Opcode::JNZ, parts.next());
                     add_label(&mut out, &labels, parts.next());
@@ -186,11 +191,6 @@ fn main() {
                     add_instruction_2(&mut out, Opcode::JNE, parts.next(), parts.next());
                     add_label(&mut out, &labels, parts.next());
                 }
-                "MUL" => add_instruction_2(&mut out, Opcode::MUL, parts.next(), parts.next()),
-                "DIV" => add_instruction_2(&mut out, Opcode::DIV, parts.next(), parts.next()),
-                "ADD" => add_instruction_2(&mut out, Opcode::ADD, parts.next(), parts.next()),
-                "SUB" => add_instruction_2(&mut out, Opcode::SUB, parts.next(), parts.next()),
-                "HLT" => add_instruction_0(&mut out, Opcode::HLT),
                 _ => {
                     if prefix.ends_with(':') {
                         // Labels are already processed, move on
