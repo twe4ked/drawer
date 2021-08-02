@@ -1,5 +1,8 @@
 ; NOTE: All of these instructions won't run because of the jumping.
 
+WIDTH 1024
+HEIGHT 1024
+
 DRW
 
 MOV

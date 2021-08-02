@@ -1,5 +1,8 @@
 ; https://gist.github.com/haileysome/aacf43c349e19497c24b2edb198c5702
 
+WIDTH 1024
+HEIGHT 1024
+
     STO H 1
 
 res:

@@ -97,11 +97,35 @@ fn main() {
         }
     }
 
+    // Find width and height
+    let mut width = None;
+    let mut height = None;
+
+    for line in input.lines() {
+        let mut parts = line.trim().split_whitespace();
+
+        if width.is_some() && height.is_some() {
+            break;
+        }
+
+        if let Some(prefix) = parts.next() {
+            match prefix {
+                "WIDTH" => {
+                    width = Some(parse_u16(parts.next()));
+                }
+                "HEIGHT" => {
+                    height = Some(parse_u16(parts.next()));
+                }
+                _ => continue,
+            }
+        }
+    }
+
     // Width
-    out.extend_from_slice(&1024u16.to_le_bytes());
+    out.extend_from_slice(&width.expect("missing width").to_le_bytes());
 
     // Height
-    out.extend_from_slice(&1024u16.to_le_bytes());
+    out.extend_from_slice(&height.expect("missing height").to_le_bytes());
 
     for line in input.lines() {
         let mut parts = line.trim().split_whitespace();
@@ -109,6 +133,7 @@ fn main() {
         if let Some(prefix) = parts.next() {
             match prefix {
                 "#" | ";" => continue,
+                "WIDTH" | "HEIGHT" => continue,
                 "DRW" => {
                     out.push(Opcode::DRW as u8);
                 }
