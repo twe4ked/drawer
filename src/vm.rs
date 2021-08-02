@@ -77,6 +77,8 @@ pub enum Instruction {
     /// STO Rx n
     /// ```
     Multiply(Register, Value),
+    /// TODO
+    Divide(Register, Value),
     /// Increment the register by an amount
     Add(Register, Value),
     /// Decrement the register by an amount
@@ -162,6 +164,7 @@ impl Instruction {
             JLT => JumpIfLessThan(p.register(), p.value(high_bit_set), p.read_u16()),
             HLT => Halt,
             MUL => Multiply(p.register(), p.value(high_bit_set)),
+            DIV => Divide(p.register(), p.value(high_bit_set)),
         };
 
         (p.cursor, instruction)
@@ -318,6 +321,21 @@ impl<'a> Vm<'a> {
                 Register::FloatRegister(register) => {
                     let value = self.unwrap_float_value(value);
                     self.float_registers[register as usize] *= value;
+                }
+            },
+            Instruction::Divide(register, value) => match register {
+                Register::UintRegister(register) => {
+                    let value = self.unwrap_uint_value(value);
+                    let (value, overflowed) =
+                        self.uint_registers[register as usize].overflowing_div(value);
+                    if overflowed {
+                        eprintln!("warning: {:?} overflowed", register);
+                    }
+                    self.uint_registers[register as usize] = value;
+                }
+                Register::FloatRegister(register) => {
+                    let value = self.unwrap_float_value(value);
+                    self.float_registers[register as usize] /= value;
                 }
             },
         }

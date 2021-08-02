@@ -163,6 +163,10 @@ fn main() {
                     let register = parse_register(parts.next());
                     add_instruction(&mut out, Opcode::MUL, register, parts.next())
                 }
+                "DIV" => {
+                    let register = parse_register(parts.next());
+                    add_instruction(&mut out, Opcode::DIV, register, parts.next())
+                }
                 "ADD" => {
                     let r1 = parse_register(parts.next());
                     let operand_2 = parts.next().expect("missing operand 2");

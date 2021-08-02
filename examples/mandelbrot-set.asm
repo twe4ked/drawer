@@ -14,16 +14,9 @@ pix:
     STO V X
     STO W Y
 
-    # abuse MOV to get 1/2
-    STO X 0
-    STO Y 0
-    STO A 60
-    MOV
-    STO S X
-
-    # reset X and Y
-    STO X V
-    STO Y W
+    # get 1/2 (no float constants)
+    STO S 1
+    DIV S 2
 
     # raise S to the 10th power to get 1/1024
     STO T 1

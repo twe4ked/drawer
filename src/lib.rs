@@ -20,13 +20,14 @@ pub enum Opcode {
     JEQ = 0x0c,
     JNE = 0x0d,
     JLT = 0x0e,
+    DIV = 0x0f,
 }
 
 impl TryFrom<u8> for Opcode {
     type Error = ();
 
     fn try_from(input: u8) -> Result<Self, Self::Error> {
-        if input <= 0x0e {
+        if input <= 0x0f {
             // Safety: Opcode is repr(u8) and the input is <= the largest Opcode varient
             Ok(unsafe { std::mem::transmute::<u8, Self>(input) })
         } else {
@@ -54,6 +55,7 @@ impl TryFrom<&str> for Opcode {
             "JEQ" => Ok(Opcode::JEQ),
             "JNE" => Ok(Opcode::JNE),
             "JLT" => Ok(Opcode::JLT),
+            "DIV" => Ok(Opcode::DIV),
             _ => Err(()),
         }
     }
