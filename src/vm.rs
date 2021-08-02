@@ -4,6 +4,7 @@ use crate::Opcode;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum UintRegister {
+    /// Angle register
     A = 0,
     B = 1,
     C = 2,
@@ -21,7 +22,9 @@ pub enum FloatRegister {
     U = 2,
     V = 3,
     W = 4,
+    /// X position
     X = 5,
+    /// Y position
     Y = 6,
     Z = 7,
 }
@@ -66,22 +69,55 @@ pub enum Value {
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
     /// Toggle if we're drawing or not
-    Draw,
-    /// End the program
-    Halt,
-    /// Move in direction of the current angle stored in register A
-    Move,
-    /// Set the register `Rx` to the product of `Rx` and the immediate value `n`.
     ///
     /// ```text
-    /// STO Rx n
+    /// DRW
+    /// ```
+    Draw,
+    /// End the program
+    ///
+    /// ```text
+    /// HLT
+    /// ```
+    Halt,
+    /// Update float registers `X` and `Y` to "move" in direction of the current angle stored in
+    /// register `A`.
+    ///
+    /// ```text
+    /// MOV
+    /// ```
+    Move,
+    /// Set the register `Rx` to the product of `Rx` and either the immediate value `n`, or the
+    /// value in the register `Ry`.
+    ///
+    /// ```text
+    /// MUL Rx n
+    /// MUL Rx Ry
     /// ```
     Multiply(Register, Value),
-    /// TODO
+    /// Set the register `Rx` to the quotient of `Rx` and either the immediate value `n`, or the
+    /// value in the register `Ry`.
+    ///
+    /// ```text
+    /// DIV Rx n
+    /// DIV Rx Ry
+    /// ```
     Divide(Register, Value),
-    /// Increment the register by an amount
+    /// Set the register `Rx` to the sum of `Rx` and either the immediate value `n`, or the
+    /// value in the register `Ry`.
+    ///
+    /// ```text
+    /// ADD Rx n
+    /// ADD Rx Ry
+    /// ```
     Add(Register, Value),
-    /// Decrement the register by an amount
+    /// Set the register `Rx` to the difference of `Rx` and either the immediate value `n`, or the
+    /// value in the register `Ry`.
+    ///
+    /// ```text
+    /// SUB Rx n
+    /// SUB Rx Ry
+    /// ```
     Sub(Register, Value),
     /// Set the register `Rx` to either the immediate value `n`, or the value in the register `Ry`.
     ///
@@ -90,19 +126,55 @@ pub enum Instruction {
     /// STO Rx Ry
     /// ```
     Store(Register, Value),
-    /// Decrement register
+    /// Decrement register `Rx`.
+    ///
+    /// ```text
+    /// DEC Rx
+    /// ```
     Decrement(Register),
-    /// Increment register
+    /// Increment register `Rx`.
+    ///
+    /// ```text
+    /// INC Rx
+    /// ```
     Increment(Register),
-    /// Jump if register is non-zero
+    /// Jump to `label:` if the register `Rx` is non-zero.
+    ///
+    /// ```text
+    /// JNZ Rx label:
+    /// ```
     JumpIfNonZero(Register, u16),
-    /// TODO
+    /// Jump to `label:` if the register `Rx` is equal to the immediate value `n`, or the value in
+    /// the register `Ry`.
+    ///
+    /// ```text
+    /// JEQ Rx n label:
+    /// JEQ Rx Ry label:
+    /// ```
     JumpIfEqual(Register, Value, u16),
-    /// TODO
+    /// Jump to `label:` if the register `Rx` is not equal to the immediate value `n`, or the value
+    /// in the register `Ry`.
+    ///
+    /// ```text
+    /// JNE Rx n label:
+    /// JNE Rx Ry label:
+    /// ```
     JumpIfNotEqual(Register, Value, u16),
-    /// TODO
+    /// Jump to `label:` if the register `Rx` is greater than the immediate value `n`, or the value
+    /// in the register `Ry`.
+    ///
+    /// ```text
+    /// JGT Rx n label:
+    /// JGT Rx Ry label:
+    /// ```
     JumpIfGreaterThan(Register, Value, u16),
-    /// TODO
+    /// Jump to `label:` if the register `Rx` is less than the immediate value `n`, or the value in
+    /// the register `Ry`.
+    ///
+    /// ```text
+    /// JLT Rx n label:
+    /// JLT Rx Ry label:
+    /// ```
     JumpIfLessThan(Register, Value, u16),
 }
 
