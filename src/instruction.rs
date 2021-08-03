@@ -220,41 +220,39 @@ impl<'a> Program<'a> {
     }
 }
 
-impl Instruction {
-    pub fn parse_next(buffer: &[u8]) -> (usize, Instruction) {
-        let mut p = Program { buffer, cursor: 0 };
+fn parse_next_instruction(buffer: &[u8]) -> (usize, Instruction) {
+    let mut p = Program { buffer, cursor: 0 };
 
-        let opcode = p.read_u8();
+    let opcode = p.read_u8();
 
-        // If the high bit is set the second operand should be treated as a register
-        let high_bit_set = opcode & 0b1000_0000 != 0;
+    // If the high bit is set the second operand should be treated as a register
+    let high_bit_set = opcode & 0b1000_0000 != 0;
 
-        let opcode = Opcode::try_from(opcode & 0b0111_1111)
-            .unwrap_or_else(|_| panic!("invalid instruction: {:#04x}", opcode));
+    let opcode = Opcode::try_from(opcode & 0b0111_1111)
+        .unwrap_or_else(|_| panic!("invalid instruction: {:#04x}", opcode));
 
-        use Instruction::*;
-        use Opcode::*;
+    use Instruction::*;
+    use Opcode::*;
 
-        let instruction = match opcode {
-            DRW => Draw,
-            MOV => Move,
-            HLT => Halt,
-            INC => Increment(p.register()),
-            DEC => Decrement(p.register()),
-            STO => Store(p.register(), p.value(high_bit_set)),
-            ADD => Add(p.register(), p.value(high_bit_set)),
-            SUB => Sub(p.register(), p.value(high_bit_set)),
-            MUL => Multiply(p.register(), p.value(high_bit_set)),
-            DIV => Divide(p.register(), p.value(high_bit_set)),
-            JNZ => JumpIfNonZero(p.register(), p.address()),
-            JEQ => JumpIfEqual(p.register(), p.value(high_bit_set), p.address()),
-            JNE => JumpIfNotEqual(p.register(), p.value(high_bit_set), p.address()),
-            JGT => JumpIfGreaterThan(p.register(), p.value(high_bit_set), p.address()),
-            JLT => JumpIfLessThan(p.register(), p.value(high_bit_set), p.address()),
-        };
+    let instruction = match opcode {
+        DRW => Draw,
+        MOV => Move,
+        HLT => Halt,
+        INC => Increment(p.register()),
+        DEC => Decrement(p.register()),
+        STO => Store(p.register(), p.value(high_bit_set)),
+        ADD => Add(p.register(), p.value(high_bit_set)),
+        SUB => Sub(p.register(), p.value(high_bit_set)),
+        MUL => Multiply(p.register(), p.value(high_bit_set)),
+        DIV => Divide(p.register(), p.value(high_bit_set)),
+        JNZ => JumpIfNonZero(p.register(), p.address()),
+        JEQ => JumpIfEqual(p.register(), p.value(high_bit_set), p.address()),
+        JNE => JumpIfNotEqual(p.register(), p.value(high_bit_set), p.address()),
+        JGT => JumpIfGreaterThan(p.register(), p.value(high_bit_set), p.address()),
+        JLT => JumpIfLessThan(p.register(), p.value(high_bit_set), p.address()),
+    };
 
-        (p.cursor, instruction)
-    }
+    (p.cursor, instruction)
 }
 
 pub fn decode(buffer: &[u8]) -> (u16, u16, Vec<Instruction>) {
@@ -269,7 +267,7 @@ pub fn decode(buffer: &[u8]) -> (u16, u16, Vec<Instruction>) {
             break;
         }
 
-        let (bytes, instruction) = Instruction::parse_next(&buffer[i..]);
+        let (bytes, instruction) = parse_next_instruction(&buffer[i..]);
         i += bytes;
 
         program.push(instruction);
