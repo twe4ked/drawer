@@ -237,19 +237,19 @@ impl Instruction {
         let instruction = match opcode {
             DRW => Draw,
             MOV => Move,
-            STO => Store(p.register(), p.value(high_bit_set)),
+            HLT => Halt,
             INC => Increment(p.register()),
+            DEC => Decrement(p.register()),
+            STO => Store(p.register(), p.value(high_bit_set)),
             ADD => Add(p.register(), p.value(high_bit_set)),
             SUB => Sub(p.register(), p.value(high_bit_set)),
-            DEC => Decrement(p.register()),
+            MUL => Multiply(p.register(), p.value(high_bit_set)),
+            DIV => Divide(p.register(), p.value(high_bit_set)),
             JNZ => JumpIfNonZero(p.register(), p.address()),
             JEQ => JumpIfEqual(p.register(), p.value(high_bit_set), p.address()),
             JNE => JumpIfNotEqual(p.register(), p.value(high_bit_set), p.address()),
             JGT => JumpIfGreaterThan(p.register(), p.value(high_bit_set), p.address()),
             JLT => JumpIfLessThan(p.register(), p.value(high_bit_set), p.address()),
-            HLT => Halt,
-            MUL => Multiply(p.register(), p.value(high_bit_set)),
-            DIV => Divide(p.register(), p.value(high_bit_set)),
         };
 
         (p.cursor, instruction)
