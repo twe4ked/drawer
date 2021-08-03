@@ -226,6 +226,7 @@ impl Instruction {
 
         let opcode = p.read_u8();
 
+        // If the high bit is set the second operand should be treated as a register
         let high_bit_set = opcode & 0b1000_0000 != 0;
 
         let opcode = Opcode::try_from(opcode & 0b0111_1111)
