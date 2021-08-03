@@ -107,7 +107,7 @@ impl Vm {
                     Value::Uint(0),
                     |a: f64, b: f64| (a - b).abs() > f64::EPSILON, // a != b
                 ) {
-                    self.pc = addr as usize;
+                    self.pc = addr.into();
                     return None;
                 }
             }
@@ -117,7 +117,7 @@ impl Vm {
                     value,
                     |a, b| (a - b).abs() < f64::EPSILON, // a == b
                 ) {
-                    self.pc = addr as usize;
+                    self.pc = addr.into();
                     return None;
                 }
             }
@@ -127,19 +127,19 @@ impl Vm {
                     value,
                     |a, b| (a - b).abs() > f64::EPSILON, // a != b
                 ) {
-                    self.pc = addr as usize;
+                    self.pc = addr.into();
                     return None;
                 }
             }
             Instruction::JumpIfGreaterThan(register, value, addr) => {
                 if self.check_conditional(register, value, |a, b| a > b) {
-                    self.pc = addr as usize;
+                    self.pc = addr.into();
                     return None;
                 }
             }
             Instruction::JumpIfLessThan(register, value, addr) => {
                 if self.check_conditional(register, value, |a, b| a < b) {
-                    self.pc = addr as usize;
+                    self.pc = addr.into();
                     return None;
                 }
             }

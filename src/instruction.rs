@@ -66,6 +66,15 @@ pub enum Value {
     Register(Register),
 }
 
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct Address(u16);
+
+impl From<Address> for usize {
+    fn from(addr: Address) -> Self {
+        addr.0 as _
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
     /// Toggle if we're drawing or not
@@ -143,7 +152,7 @@ pub enum Instruction {
     /// ```text
     /// JNZ Rx label:
     /// ```
-    JumpIfNonZero(Register, u16),
+    JumpIfNonZero(Register, Address),
     /// Jump to `label:` if the register `Rx` is equal to the immediate value `n`, or the value in
     /// the register `Ry`.
     ///
@@ -151,7 +160,7 @@ pub enum Instruction {
     /// JEQ Rx n label:
     /// JEQ Rx Ry label:
     /// ```
-    JumpIfEqual(Register, Value, u16),
+    JumpIfEqual(Register, Value, Address),
     /// Jump to `label:` if the register `Rx` is not equal to the immediate value `n`, or the value
     /// in the register `Ry`.
     ///
@@ -159,7 +168,7 @@ pub enum Instruction {
     /// JNE Rx n label:
     /// JNE Rx Ry label:
     /// ```
-    JumpIfNotEqual(Register, Value, u16),
+    JumpIfNotEqual(Register, Value, Address),
     /// Jump to `label:` if the register `Rx` is greater than the immediate value `n`, or the value
     /// in the register `Ry`.
     ///
@@ -167,7 +176,7 @@ pub enum Instruction {
     /// JGT Rx n label:
     /// JGT Rx Ry label:
     /// ```
-    JumpIfGreaterThan(Register, Value, u16),
+    JumpIfGreaterThan(Register, Value, Address),
     /// Jump to `label:` if the register `Rx` is less than the immediate value `n`, or the value in
     /// the register `Ry`.
     ///
@@ -175,7 +184,7 @@ pub enum Instruction {
     /// JLT Rx n label:
     /// JLT Rx Ry label:
     /// ```
-    JumpIfLessThan(Register, Value, u16),
+    JumpIfLessThan(Register, Value, Address),
 }
 
 struct Program<'a> {
@@ -205,6 +214,10 @@ impl<'a> Program<'a> {
             Value::Uint(self.read_u16())
         }
     }
+
+    fn address(&mut self) -> Address {
+        Address(self.read_u16())
+    }
 }
 
 impl Instruction {
@@ -229,11 +242,11 @@ impl Instruction {
             ADD => Add(p.register(), p.value(high_bit_set)),
             SUB => Sub(p.register(), p.value(high_bit_set)),
             DEC => Decrement(p.register()),
-            JNZ => JumpIfNonZero(p.register(), p.read_u16()),
-            JEQ => JumpIfEqual(p.register(), p.value(high_bit_set), p.read_u16()),
-            JNE => JumpIfNotEqual(p.register(), p.value(high_bit_set), p.read_u16()),
-            JGT => JumpIfGreaterThan(p.register(), p.value(high_bit_set), p.read_u16()),
-            JLT => JumpIfLessThan(p.register(), p.value(high_bit_set), p.read_u16()),
+            JNZ => JumpIfNonZero(p.register(), p.address()),
+            JEQ => JumpIfEqual(p.register(), p.value(high_bit_set), p.address()),
+            JNE => JumpIfNotEqual(p.register(), p.value(high_bit_set), p.address()),
+            JGT => JumpIfGreaterThan(p.register(), p.value(high_bit_set), p.address()),
+            JLT => JumpIfLessThan(p.register(), p.value(high_bit_set), p.address()),
             HLT => Halt,
             MUL => Multiply(p.register(), p.value(high_bit_set)),
             DIV => Divide(p.register(), p.value(high_bit_set)),
