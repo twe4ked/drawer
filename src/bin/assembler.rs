@@ -148,6 +148,9 @@ fn main() {
 
     let mut out = Vec::new();
 
+    // Version
+    out.push(0x01);
+
     // Width
     out.extend_from_slice(&width.expect("missing width").to_le_bytes());
 

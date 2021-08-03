@@ -255,13 +255,24 @@ fn parse_next_instruction(buffer: &[u8]) -> (usize, Instruction) {
     (p.cursor, instruction)
 }
 
+fn parse_header(buffer: &[u8]) -> (usize, u8, u16, u16) {
+    let version = buffer[0];
+
+    let width = u16::from_le_bytes([buffer[1], buffer[2]]);
+    let height = u16::from_le_bytes([buffer[3], buffer[4]]);
+
+    // We've read 5 bytes
+    let read = 5;
+
+    (read, version, width, height)
+}
+
 pub fn decode(buffer: &[u8]) -> (u16, u16, Vec<Instruction>) {
+    let (mut i, version, width, height) = parse_header(&buffer);
+
+    assert_eq!(0x01, version);
+
     let mut program = Vec::new();
-
-    let width = u16::from_le_bytes([buffer[0], buffer[1]]);
-    let height = u16::from_le_bytes([buffer[2], buffer[3]]);
-
-    let mut i = 4;
     loop {
         if i >= buffer.len() {
             break;
