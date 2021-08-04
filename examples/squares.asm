@@ -6,24 +6,24 @@ DRW
 STO C 1
 
 main_loop:
-	; If C > 507, skip to continue:
-	JGT C 507 continue:
+    ; If C > 507, skip to continue:
+    JGT C 507 continue:
 
-		; Move forward C times
-		STO E C
-		move_loop:
-			FWD
-			DEC E
-			NZ E move:
+    ; Move forward C times
+    STO E C
 
-		; Set A (the angle) to C * 91
-		TO A C
-		MUL A 91
+move_loop:
+    FWD
+    DEC E
+    NZ E move:
 
-	continue:
+    ; Set A (the angle) to C * 91
+    TO A C
+    MUL A 91
 
-	; Main loop increment
-       INC C
-       JLT C 512 main_loop:
+continue:
+    ; Main loop increment
+    INC C
+    JLT C 512 main_loop:
 
 HLT
