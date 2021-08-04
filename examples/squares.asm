@@ -3,7 +3,6 @@ HEIGHT 1024
 
 DRW
 
-STO B 512
 STO C 1
 
 main_loop:
@@ -15,18 +14,16 @@ main_loop:
 		move_loop:
 			FWD
 			DEC E
-			JNZ E move_loop:
+			NZ E move:
 
-		; Store the main loop count in A then multiply by 91
-		STO A C
+		; Set A (the angle) to C * 91
+		TO A C
 		MUL A 91
 
 	continue:
 
-	INC C
-
 	; Main loop increment
-	DEC B
-	JNZ B main_loop:
+       INC C
+       JLT C 512 main_loop:
 
 HLT
