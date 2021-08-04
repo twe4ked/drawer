@@ -12,10 +12,10 @@ mark_1:
   # Store the current value D (counting up) in C
   STO C D
 
-  # Move C number of times
+  # Move forward C number of times
   mark_2:
     DEC C
-    MOV
+    FWD
     JNZ C mark_2:
 
   # Set the A register to by D * 15

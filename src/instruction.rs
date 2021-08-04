@@ -75,6 +75,10 @@ impl From<Address> for usize {
     }
 }
 
+/// Instructions are ...
+///
+/// ```text
+/// ```
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
     /// Toggle if we're drawing or not
@@ -93,9 +97,9 @@ pub enum Instruction {
     /// register `A`.
     ///
     /// ```text
-    /// MOV
+    /// FWD
     /// ```
-    Move,
+    Forward,
     /// Set the register `Rx` to the product of `Rx` and either the immediate value `n`, or the
     /// value in the register `Ry`.
     ///
@@ -236,7 +240,7 @@ fn parse_next_instruction(buffer: &[u8]) -> (usize, Instruction) {
 
     let instruction = match opcode {
         DRW => Draw,
-        MOV => Move,
+        FWD => Forward,
         HLT => Halt,
         INC => Increment(p.register()),
         DEC => Decrement(p.register()),

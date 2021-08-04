@@ -10,10 +10,10 @@ main_loop:
 	; If C > 507, skip to continue:
 	JGT C 507 continue:
 
-		; Move C times
+		; Move forward C times
 		STO E C
 		move_loop:
-			MOV
+			FWD
 			DEC E
 			JNZ E move_loop:
 

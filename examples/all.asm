@@ -3,7 +3,7 @@ HEIGHT 1024
 
 DRW
 
-MOV
+FWD
 
 ; STO Rx n
 ; STO Rx Ry

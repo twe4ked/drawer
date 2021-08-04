@@ -8,7 +8,7 @@ pub mod vm;
 #[allow(clippy::upper_case_acronyms)]
 pub enum Opcode {
     DRW = 0x01,
-    MOV = 0x02,
+    FWD = 0x02,
     STO = 0x03,
     INC = 0x04,
     ADD = 0x05,
@@ -43,7 +43,7 @@ impl TryFrom<&str> for Opcode {
     fn try_from(input: &str) -> Result<Self, Self::Error> {
         match input {
             "DRW" => Ok(Opcode::DRW),
-            "MOV" => Ok(Opcode::MOV),
+            "FWD" => Ok(Opcode::FWD),
             "STO" => Ok(Opcode::STO),
             "INC" => Ok(Opcode::INC),
             "ADD" => Ok(Opcode::ADD),

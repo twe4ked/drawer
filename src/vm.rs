@@ -32,7 +32,7 @@ impl Vm {
             Instruction::Draw => {
                 self.draw = !self.draw;
             }
-            Instruction::Move => {
+            Instruction::Forward => {
                 let angle = (self.uint_registers[UintRegister::A as usize] % 360) as f64;
                 let radians = angle.to_radians();
                 self.float_registers[FloatRegister::X as usize] += radians.cos();

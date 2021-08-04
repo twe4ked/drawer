@@ -165,7 +165,7 @@ fn main() {
                 "#" | ";" => continue,
                 "WIDTH" | "HEIGHT" => continue,
                 "DRW" => add_instruction_0(&mut out, Opcode::DRW),
-                "MOV" => add_instruction_0(&mut out, Opcode::MOV),
+                "FWD" => add_instruction_0(&mut out, Opcode::FWD),
                 "HLT" => add_instruction_0(&mut out, Opcode::HLT),
                 "INC" => add_instruction_1(&mut out, Opcode::INC, parts.next()),
                 "DEC" => add_instruction_1(&mut out, Opcode::DEC, parts.next()),

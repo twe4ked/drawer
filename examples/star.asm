@@ -8,7 +8,7 @@ STO B 5
 mark_1:
   STO C 200
 		mark_2:
-    MOV
+    FWD
     DEC C
     JNZ C mark_2:
 
