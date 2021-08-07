@@ -1,34 +1,17 @@
 use crate::instruction::{FloatRegister, Instruction, Register, UintRegister, Value};
 
+#[derive(Default)]
 pub struct Vm {
     pc: usize,
     draw: bool,
-    program: Vec<Instruction>,
     terminated: bool,
     uint_registers: [u16; 8],
     float_registers: [f64; 8],
 }
 
 impl Vm {
-    pub fn new(input: &[u8]) -> (u16, u16, Self) {
-        let (width, height, program) = crate::instruction::decode(&input);
-
-        (
-            width,
-            height,
-            Vm {
-                pc: 0,
-                draw: false,
-                program,
-                terminated: false,
-                uint_registers: Default::default(),
-                float_registers: Default::default(),
-            },
-        )
-    }
-
-    pub fn step(&mut self) -> Option<(isize, isize, u32)> {
-        match self.program[self.pc] {
+    pub fn step(&mut self, program: &[Instruction]) -> Option<(isize, isize, u32)> {
+        match program[self.pc] {
             Instruction::Draw => {
                 self.draw = !self.draw;
             }

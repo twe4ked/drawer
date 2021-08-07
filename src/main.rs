@@ -5,6 +5,7 @@ use std::sync::mpsc::channel;
 use std::thread;
 
 use drawer::buffer::Buffer;
+use drawer::instruction::decode;
 use drawer::vm::Vm;
 
 enum Event {
@@ -16,7 +17,9 @@ fn main() {
     let mut input = Vec::new();
     stdin().read_to_end(&mut input).unwrap();
 
-    let (width, height, mut vm) = Vm::new(&input);
+    let (width, height, program) = decode(&input);
+
+    let mut vm = Vm::default();
 
     let width = width as usize;
     let height = height as usize;
@@ -24,7 +27,7 @@ fn main() {
     let (tx, rx) = channel();
     let worker = thread::spawn(move || {
         while !vm.is_terminated() {
-            if let Some(pixel) = vm.step() {
+            if let Some(pixel) = vm.step(&program) {
                 tx.send(Event::Pixel(pixel)).unwrap();
             }
         }
